@@ -9,7 +9,7 @@ export const VIDEO = {
 // ─── Phase timing (all values in seconds) ────────────────────────────────────
 export const PHASES = {
     hero: {
-        duration:        10,   // total seconds
+        duration:        60,   // total seconds
         cycleSeconds:     3,   // seconds per message cycle
         pulseSeconds:   2.27,  // seconds for pulse travel (cycleSeconds * 68/90)
         impactSeconds:  0.73,  // seconds for impact effect (cycleSeconds * 22/90)

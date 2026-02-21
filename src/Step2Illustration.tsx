@@ -63,7 +63,7 @@ const MAG_OVER_DOC = { x: 55, y: 20 }
 // Pure function: compute mag position at any arbitrary progress value
 function getMagPosition(magDocProg: number, magCodeProg: number): { x: number; y: number } {
     const startX = 18, startY = 40
-    const endX = 82,   endY = 92
+    const endX = 110,  endY = 120
     const waves = 3
     const amplitude = 18
 
@@ -118,7 +118,10 @@ export default function Step2Illustration() {
 
     const anim = useMemo(() => {
         const { starts, weights } = buildPhases(PHASES.step2) // change stepN per component
-        const p = (key: string) => ({ start: starts[key], weight: weights[key] })
+        const p = (key: string) => ({
+            start:  (starts  as Record<string, number>)[key],
+            weight: (weights as Record<string, number>)[key],
+        })
 
         // Stagger node appearance
         const nodes: Record<string, number> = {}
@@ -134,11 +137,10 @@ export default function Step2Illustration() {
 
         const docProg     = clamp((progress - p("doc").start)     / p("doc").weight)
         const magDocProg  = clamp((progress - p("magDoc").start)  / p("magDoc").weight)
-        const magCodeProg = clamp((progress - p("magCode").start) / p("magCode").weight)
-        const magAppear   = ease(clamp(magDocProg * 5))
-
-        // Current mag position
-        const { x: magX, y: magY } = getMagPosition(magDocProg, magCodeProg)
+        const magCodeProg = (progress - p("magCode").start) / p("magCode").weight
+        const magAppear = ease(clamp(magDocProg * 5))
+        const extendedMagCodeProg = (progress - p("magCode").start) / p("magCode").weight
+        const { x: magX, y: magY } = getMagPosition(magDocProg, extendedMagCodeProg)
 
         // ─── Scanned: pure calculation ────────────────────────────────────────
         // Sample the mag path at many points up to the current progress
@@ -160,6 +162,7 @@ export default function Step2Illustration() {
         }
 
         const highlightProg = clamp((progress - p("highlight").start) / p("highlight").weight)
+        const magOpacity = magAppear
 
         return {
             nodes,
@@ -168,7 +171,7 @@ export default function Step2Illustration() {
             docY: ease(docProg),
             magX,
             magY,
-            magOpacity: magAppear,
+            magOpacity,
             magDocProg,
             magCodeProg,
             highlightProg: ease(highlightProg),
