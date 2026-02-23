@@ -194,8 +194,20 @@ export default function Step1Illustration() {
             )
         })
 
+        const breatheProg = clamp((progress - p("breathe").start) / p("breathe").weight)
+        const breathe: Record<string, number> = {}
+        positionedNodes.forEach((node, i) => {
+            // Each node gets a window of time proportional to its position in the circle
+            const nodeStart = i / positionedNodes.length
+            const nodeEnd   = nodeStart + (1 / positionedNodes.length)
+            const t = clamp((breatheProg - nodeStart) / (nodeEnd - nodeStart))
+            // Single pulse: goes up then back down
+            breathe[node.id] = Math.sin(t * Math.PI)
+        })
+
         return {
             nodes,
+            breathe,
             edgeDraw:    clamp((progress - p("edges").start) / p("edges").weight),
             centerScale: ease(clamp((progress - p("center").start) / p("center").weight)),
             centerGlow:  clamp((progress - p("glow").start) / p("glow").weight),
@@ -346,7 +358,10 @@ export default function Step1Illustration() {
                             position: "absolute",
                             left: `${node.cssX}%`,
                             top:  `${node.cssY}%`,
-                            transform: `translate(-50%,-50%) scale(${0.4 + vis * 0.6})`,
+                            transform: `translate(-50%,-50%) scale(${(0.4 + vis * 0.6) * (1 + anim.breathe[node.id] * 0.18)})`,
+                            boxShadow: anim.breathe[node.id] > 0.1
+                                ? `0 0 ${anim.breathe[node.id] * 12}px rgba(65,130,244,0.25)`
+                                : "0 1px 3px rgba(0,0,0,0.04)",
                             opacity: vis,
                             zIndex: 4,
                             display: "flex",

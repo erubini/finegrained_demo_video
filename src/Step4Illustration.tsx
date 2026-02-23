@@ -88,7 +88,10 @@ export default function Step4Illustration() {
 
     const anim = useMemo(() => {
         const { starts, weights } = buildPhases(PHASES.step4) // change stepN per component
-        const p = (key: string) => ({ start: starts[key], weight: weights[key] })
+        const p = (key: string) => ({
+            start:  (starts  as Record<string, number>)[key],
+            weight: (weights as Record<string, number>)[key],
+        })
 
         return {
             engVis:      ease(clamp((progress - p("engineers").start)  / (p("engineers").weight  * 0.6))),

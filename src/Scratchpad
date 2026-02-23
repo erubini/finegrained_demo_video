@@ -1,0 +1,43 @@
+<TransitionSeries.Sequence durationInFrames={heroDuration}>
+                    <HeroContextLayer />
+                </TransitionSeries.Sequence>
+                
+                <TransitionSeries.Sequence durationInFrames={phaseDuration(PHASES.step2)}>
+                    <Step2Illustration />
+                </TransitionSeries.Sequence>
+
+                <TransitionSeries.Transition
+                    presentation={transType("step2ToStep3")}
+                    timing={linearTiming({ durationInFrames: transFrames("step2ToStep3") })}
+                />
+
+                <TransitionSeries.Sequence durationInFrames={phaseDuration(PHASES.step3)}>
+                    <Step3Illustration />
+                </TransitionSeries.Sequence>
+
+                <TransitionSeries.Transition
+                    presentation={transType("step3ToStep4")}
+                    timing={linearTiming({ durationInFrames: transFrames("step3ToStep4") })}
+                />
+
+                <TransitionSeries.Sequence durationInFrames={phaseDuration(PHASES.step4)}>
+                    <Step4Illustration />
+                </TransitionSeries.Sequence>
+
+                <TransitionSeries.Transition
+                    presentation={transType("step4ToStep5")}
+                    timing={linearTiming({ durationInFrames: transFrames("step4ToStep5") })}
+                />
+
+                <TransitionSeries.Sequence durationInFrames={phaseDuration(PHASES.step5)}>
+                    <Step5Illustration />
+                </TransitionSeries.Sequence>
+
+                <TransitionSeries.Transition
+                    presentation={transType("step5ToStep6")}
+                    timing={linearTiming({ durationInFrames: transFrames("step5ToStep6") })}
+                />
+
+                <TransitionSeries.Sequence durationInFrames={phaseDuration(PHASES.step6)}>
+                    <Step7Illustration />
+                </TransitionSeries.Sequence>

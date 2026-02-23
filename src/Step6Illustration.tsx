@@ -149,8 +149,11 @@ export default function Step6Illustration() {
     const pad  = base * 0.018
 
     const anim = useMemo(() => {
-        const { starts, weights } = buildPhases(PHASES.step1) // change stepN per component
-        const p = (key: string) => ({ start: starts[key], weight: weights[key] })
+        const { starts, weights } = buildPhases(PHASES.step6) // change stepN per component
+        const p = (key: string) => ({
+            start:  (starts  as Record<string, number>)[key],
+            weight: (weights as Record<string, number>)[key],
+        })
 
         return {
             diffVis:   ease(clamp((progress - p("diff").start)  / (p("diff").weight  * 0.6))),

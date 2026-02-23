@@ -151,7 +151,10 @@ export default function Step3Illustration() {
 
     const anim = useMemo(() => {
         const { starts, weights } = buildPhases(PHASES.step3) // change stepN per component
-        const p = (key: string) => ({ start: starts[key], weight: weights[key] })
+        const p = (key: string) => ({
+            start:  (starts  as Record<string, number>)[key],
+            weight: (weights as Record<string, number>)[key],
+        })
 
         const people: Record<string, number> = {}
         PEOPLE.forEach((person, i) => {

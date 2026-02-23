@@ -30,16 +30,16 @@ function lerp(a: number, b: number, t: number) {
 }
 
 const CODE_NODES = [
-    { id: "auth",       x: 18, y: 44, blocked: true  },
-    { id: "payments",   x: 72, y: 36, blocked: false },
-    { id: "api-v1",     x: 35, y: 64, blocked: true  },
-    { id: "dashboard",  x: 82, y: 61, blocked: false },
-    { id: "queue",      x: 55, y: 84, blocked: true  },
-    { id: "logging",    x: 15, y: 78, blocked: false },
-    { id: "cache",      x: 88, y: 86, blocked: false },
-    { id: "ingestion",  x: 48, y: 46, blocked: true  },
-    { id: "scheduler",  x: 30, y: 91, blocked: false },
-    { id: "middleware", x: 68, y: 71, blocked: true  },
+    { id: "auth",       x: 22, y: 37, blocked: true  },
+    { id: "payments",   x: 68, y: 38, blocked: false },
+    { id: "api-v1",     x: 35, y: 60, blocked: true  },
+    { id: "dashboard",  x: 75, y: 58, blocked: false },
+    { id: "queue",      x: 52, y: 76, blocked: true  },
+    { id: "logging",    x: 20, y: 71, blocked: false },
+    { id: "cache",      x: 78, y: 78, blocked: false },
+    { id: "ingestion",  x: 50, y: 46, blocked: true  },
+    { id: "scheduler",  x: 32, y: 84, blocked: false },
+    { id: "middleware", x: 65, y: 68, blocked: true  },
 ]
 
 const CODE_EDGES = [
@@ -64,8 +64,8 @@ const MAG_OVER_DOC = { x: 55, y: 20 }
 function getMagPosition(magDocProg: number, magCodeProg: number): { x: number; y: number } {
     const startX = 18, startY = 40
     const endX = 110,  endY = 120
-    const waves = 3
-    const amplitude = 18
+    const waves = 2.5
+    const amplitude = 30
 
     if (magDocProg < 1) {
         return {
@@ -109,6 +109,8 @@ export default function Step2Illustration() {
     const nodeSize  = Math.min(width, height) * 0.065
     const docWidth  = Math.min(width, height) * 0.16
     const docHeight = docWidth * 1.3
+    const svgOffsetX = (width - height) / 2
+    const toCSS_X = (svgX: number) => (svgOffsetX + (svgX / 100) * height) / width * 100
 
     const nodeMap = useMemo(() => {
         const map: Record<string, (typeof CODE_NODES)[0]> = {}
@@ -176,9 +178,8 @@ export default function Step2Illustration() {
             magCodeProg,
             highlightProg: ease(highlightProg),
             nodeEdgeVis: clamp(
-                (progress - p("nodes").start - p("nodes").weight * 0.3) /
-                    (p("nodes").weight * 0.5)
-            ),
+                (progress - (p("nodes").start + p("nodes").weight)) / 0.1
+                ),
         }
     }, [progress])
 
@@ -308,7 +309,7 @@ export default function Step2Illustration() {
                         key={node.id}
                         style={{
                             position: "absolute",
-                            left: `${node.x}%`,
+                            left: `${toCSS_X(node.x)}%`,
                             top: `${node.y}%`,
                             transform: `translate(-50%,-50%) scale(${0.4 + vis * 0.6})`,
                             opacity: vis,

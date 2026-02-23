@@ -1,5 +1,5 @@
 import React from "react"
-import { Sequence, Audio } from "remotion"
+import { Audio, staticFile, AbsoluteFill, useCurrentFrame } from "remotion"
 import { TransitionSeries, linearTiming } from "@remotion/transitions"
 import { fade } from "@remotion/transitions/fade"
 import { slide } from "@remotion/transitions/slide"
@@ -19,18 +19,24 @@ const transType   = (key: keyof typeof TRANSITIONS) =>
     TRANSITIONS[key].type === "fade" ? fade() : slide()
 
 export const Video: React.FC = () => {
+    const frame = useCurrentFrame()
+    const heroDuration = s(PHASES.hero.duration)
+    const isHero = frame < heroDuration
     return (
         <>
+            {/* Hero background */}
+            <AbsoluteFill style={{ 
+                background: "linear-gradient(180deg, #3b82f6 0%, #a5d0fc 100%)",
+                opacity: isHero ? 1 : 0,
+            }} />
+
+            {/* Steps background */}
+            <AbsoluteFill style={{ 
+                background: "#ffffff",
+                opacity: isHero ? 0 : 1,
+            }} />
+
             <TransitionSeries>
-                <TransitionSeries.Sequence durationInFrames={s(PHASES.hero.duration)}>
-                    <HeroContextLayer />
-                </TransitionSeries.Sequence>
-
-                <TransitionSeries.Transition
-                    presentation={transType("heroToStep1")}
-                    timing={linearTiming({ durationInFrames: transFrames("heroToStep1") })}
-                />
-
                 <TransitionSeries.Sequence durationInFrames={phaseDuration(PHASES.step1)}>
                     <Step1Illustration />
                 </TransitionSeries.Sequence>
@@ -39,51 +45,11 @@ export const Video: React.FC = () => {
                     presentation={transType("step1ToStep2")}
                     timing={linearTiming({ durationInFrames: transFrames("step1ToStep2") })}
                 />
-
-                <TransitionSeries.Sequence durationInFrames={phaseDuration(PHASES.step2)}>
-                    <Step2Illustration />
-                </TransitionSeries.Sequence>
-
-                <TransitionSeries.Transition
-                    presentation={transType("step2ToStep3")}
-                    timing={linearTiming({ durationInFrames: transFrames("step2ToStep3") })}
-                />
-
-                <TransitionSeries.Sequence durationInFrames={phaseDuration(PHASES.step3)}>
-                    <Step3Illustration />
-                </TransitionSeries.Sequence>
-
-                <TransitionSeries.Transition
-                    presentation={transType("step3ToStep4")}
-                    timing={linearTiming({ durationInFrames: transFrames("step3ToStep4") })}
-                />
-
-                <TransitionSeries.Sequence durationInFrames={phaseDuration(PHASES.step4)}>
-                    <Step4Illustration />
-                </TransitionSeries.Sequence>
-
-                <TransitionSeries.Transition
-                    presentation={transType("step4ToStep5")}
-                    timing={linearTiming({ durationInFrames: transFrames("step4ToStep5") })}
-                />
-
-                <TransitionSeries.Sequence durationInFrames={phaseDuration(PHASES.step5)}>
-                    <Step5Illustration />
-                </TransitionSeries.Sequence>
-
-                <TransitionSeries.Transition
-                    presentation={transType("step5ToStep6")}
-                    timing={linearTiming({ durationInFrames: transFrames("step5ToStep6") })}
-                />
-
-                <TransitionSeries.Sequence durationInFrames={phaseDuration(PHASES.step6)}>
-                    <Step7Illustration />
-                </TransitionSeries.Sequence>
+                
             </TransitionSeries>
 
-            {/* Audio */}
-            <Audio src={`/public/${AUDIO.voiceover.file}`} volume={AUDIO.voiceover.volume} startFrom={s(AUDIO.voiceover.startAt)} />
-            <Audio src={`/public/${AUDIO.music.file}`}     volume={AUDIO.music.volume}     startFrom={s(AUDIO.music.startAt)} />
+            <Audio src={staticFile(AUDIO.voiceover.file)} volume={AUDIO.voiceover.volume} startFrom={s(AUDIO.voiceover.startAt)} />
+            <Audio src={staticFile(AUDIO.music.file)}     volume={AUDIO.music.volume}     startFrom={s(AUDIO.music.startAt)} />
         </>
     )
 }

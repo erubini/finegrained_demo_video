@@ -51,8 +51,11 @@ export default function Step5Illustration() {
 
     const anim = useMemo(() => {
         const { starts, weights } = buildPhases(PHASES.step5) // change stepN per component
-        const p = (key: string) => ({ start: starts[key], weight: weights[key] })
-
+        const p = (key: string) => ({
+            start:  (starts  as Record<string, number>)[key],
+            weight: (weights as Record<string, number>)[key],
+        })
+        
         return {
             cardVis:      ease(clamp((progress - p("card").start)     / (p("card").weight     * 0.7))),
             expandProg:   ease(clamp((progress - p("expand").start)   /  p("expand").weight)),

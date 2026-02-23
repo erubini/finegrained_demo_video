@@ -3,7 +3,6 @@ export const VIDEO = {
     fps:        30,
     width:      1280,
     height:     720,
-    background: "#ffffff",
 }
 
 // ─── Phase timing (all values in seconds) ────────────────────────────────────
@@ -17,6 +16,8 @@ export const PHASES = {
     },
     step1: {
         nodes:       1.8,
+        breathe:      3,
+        pauseAfterBreathe: 0.5,
         edges:       1.3,
         center:      0.7,
         glow:        0.4,
@@ -27,8 +28,8 @@ export const PHASES = {
         doc:      0.5,
         nodes:    0.8,
         magDoc:   0.7,
-        magCode:  3.7,
-        highlight: 0.3,
+        magCode:  5,
+        highlight: 1.5,
     },
     step3: {
         people:  0.7,
@@ -71,8 +72,8 @@ export const TRANSITIONS = {
 
 // ─── Audio ────────────────────────────────────────────────────────────────────
 export const AUDIO = {
-    voiceover: { file: "voiceover.wav", volume: 1.0,  startAt: 0 },
-    music:     { file: "music.wav",     volume: 0.15, startAt: 0 },
+    voiceover: { file: "finegrained_video_voiceover.wav", volume: 1.0,  startAt: 0 },
+    music:     { file: "finegrained_video_music.wav",     volume: 0.6, startAt: 0 },
 }
 
 // ─── Utilities ────────────────────────────────────────────────────────────────
