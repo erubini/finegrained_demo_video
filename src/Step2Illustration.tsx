@@ -164,7 +164,8 @@ export default function Step2Illustration() {
         }
 
         const highlightProg = clamp((progress - p("highlight").start) / p("highlight").weight)
-        const magOpacity = magAppear
+        const magFadeOut = 1 - ease(clamp((progress - (p("magCode").start + p("magCode").weight * 0.8)) / (p("magCode").weight * 0.2)))
+        const magOpacity = magAppear * magFadeOut
 
         return {
             nodes,

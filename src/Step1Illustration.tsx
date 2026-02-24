@@ -2,20 +2,6 @@ import { useMemo } from "react"
 import { useCurrentFrame, useVideoConfig } from "remotion"
 import { PHASES, buildPhases } from "./config"
 
-/*
-  Step1Illustration — "Own Your Context"
-
-  Adapted for Remotion. Progress is now frame-driven instead of scroll-driven.
-  Dimensions are fixed to the composition size instead of using ResizeObserver.
-
-  Sequence:
-    0.00–0.35  Outer nodes appear (staggered)
-    0.42–0.62  Edges draw to center
-    0.62–0.74  Center node appears
-    0.75–1.00  Glow dots travel from outer nodes → center
-    0.85–1.00  Center pulse ring expands
-*/
-
 const CENTER = { x: 50, y: 50 }
 
 const NODES = [
@@ -30,6 +16,25 @@ const NODES = [
     { id: "linear", label: "Linear", type: "system", appear: 0.3 },
 ]
 
+const PULSE_SEQUENCE: Array<{ nodeId: string; dir: "in" | "out" }> = [
+    { nodeId: "core",    dir: "in"  },
+    { nodeId: "slack",   dir: "out" },
+    { nodeId: "api",     dir: "in"  },
+    { nodeId: "github",  dir: "out" },
+    { nodeId: "ml",      dir: "in"  },
+    { nodeId: "notion",  dir: "in"  },
+    { nodeId: "infra",   dir: "out" },
+    { nodeId: "zoom",    dir: "in"  },
+    { nodeId: "linear",  dir: "out" },
+    { nodeId: "slack",   dir: "in"  },
+    { nodeId: "core",    dir: "out" },
+    { nodeId: "github",  dir: "in"  },
+    { nodeId: "api",     dir: "out" },
+    { nodeId: "notion",  dir: "in"  },
+    { nodeId: "ml",      dir: "out" },
+]
+const PULSE_SPACING = 0.06
+
 function ease(t: number) {
     return t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2
 }
@@ -40,6 +45,13 @@ function clamp(t: number) {
 
 function lerp(a: number, b: number, t: number) {
     return a + (b - a) * t
+}
+
+function lerpColor(t: number, from: [number, number, number], to: [number, number, number]): string {
+    const r = Math.round(lerp(from[0], to[0], t))
+    const g = Math.round(lerp(from[1], to[1], t))
+    const b = Math.round(lerp(from[2], to[2], t))
+    return `rgb(${r},${g},${b})`
 }
 
 const FINEGRAINED_SVG = `
@@ -150,39 +162,35 @@ const icons: Record<string, string> = {
 }
 
 export default function Step1Illustration() {
-    // ─── Remotion: derive progress from current frame ───────────────────────
     const frame = useCurrentFrame()
     const { durationInFrames, width, height } = useVideoConfig()
     const progress = frame / durationInFrames
 
-    // ─── Fixed dimensions from composition config (replaces ResizeObserver) ──
     const nodeSize = Math.min(width, height) * 0.09
     const centerSize = Math.min(width, height) * 0.15
 
-    // ─── Node positions ──────────────────────────────────────────────────────
     const positionedNodes = useMemo(() => {
-        const orbitR = 38  // radius in SVG units within 0-100 square
-        const svgOffsetX = (width - height) / 2  // 280px for 1280×720
-    
+        const orbitR = 38
+        const svgOffsetX = (width - height) / 2
+
         return NODES.map((node, i) => {
             const angle = (i / NODES.length) * Math.PI * 2 - Math.PI / 2
             const svgX = 50 + Math.cos(angle) * orbitR
             const svgY = 50 + Math.sin(angle) * orbitR
-            // Convert SVG square coords to CSS % of the full frame
             const cssX = (svgOffsetX + (svgX / 100) * height) / width * 100
             const cssY = svgY
             return { ...node, x: svgX, y: svgY, cssX, cssY }
         })
     }, [width, height])
 
-    // ─── Animation phases ────────────────────────────────────────────────────
     const anim = useMemo(() => {
-        const { starts, weights } = buildPhases(PHASES.step1) // change stepN per component
+        const { starts, weights } = buildPhases(PHASES.step1)
         const p = (key: string) => ({
             start:  (starts  as Record<string, number>)[key],
             weight: (weights as Record<string, number>)[key],
         })
-        
+
+        // Nodes appear
         const nodes: Record<string, number> = {}
         positionedNodes.forEach((n, i) => {
             const stagger = (i / positionedNodes.length) * p("nodes").weight
@@ -194,31 +202,54 @@ export default function Step1Illustration() {
             )
         })
 
+        // Breathe
         const breatheProg = clamp((progress - p("breathe").start) / p("breathe").weight)
         const breathe: Record<string, number> = {}
         positionedNodes.forEach((node, i) => {
-            // Each node gets a window of time proportional to its position in the circle
             const nodeStart = i / positionedNodes.length
             const nodeEnd   = nodeStart + (1 / positionedNodes.length)
             const t = clamp((breatheProg - nodeStart) / (nodeEnd - nodeStart))
-            // Single pulse: goes up then back down
             breathe[node.id] = Math.sin(t * Math.PI)
         })
+
+        // Active pulses
+        const pulseBase = (progress - p("pulse").start) / p("pulse").weight
+        const activePulses = PULSE_SEQUENCE.map((entry, i) => {
+            const startFrac = i * PULSE_SPACING
+            const t = clamp((pulseBase - startFrac) / 0.35)
+            if (t <= 0 || t >= 1) return null
+            return { ...entry, t: ease(t) }
+        }).filter(Boolean) as Array<{ nodeId: string; dir: "in" | "out"; t: number }>
+
+        // Final simultaneous pulse — all nodes → center
+        const finalPulseBase = clamp((progress - p("finalPulse").start) / p("finalPulse").weight)
+        const finalPulses = finalPulseBase > 0
+            ? positionedNodes.map((node) => ({
+                nodeId: node.id,
+                dir: "in" as const,
+                t: ease(finalPulseBase),
+            }))
+            : []
 
         return {
             nodes,
             breathe,
-            edgeDraw:    clamp((progress - p("edges").start) / p("edges").weight),
-            centerScale: ease(clamp((progress - p("center").start) / p("center").weight)),
-            centerGlow:  clamp((progress - p("glow").start) / p("glow").weight),
-            pulse:       clamp((progress - p("pulse").start) / p("pulse").weight),
-            centerPulse: clamp((progress - p("centerPulse").start) / p("centerPulse").weight),
+            activePulses,
+            finalPulses,
+            edgeDraw:    clamp((progress - p("edges").start)  / p("edges").weight),
+            centerScale: ease(clamp((progress - p("edges").start) / p("center").weight)),
+            centerGlow:  clamp((progress - p("edges").start)  / p("glow").weight),
+            centerPulse: clamp((progress - (p("finalPulse").start + p("finalPulse").weight * 0.7)) / p("centerPulse").weight),
+            transitionPrep: ease(clamp((progress - p("centerPulse").start) / (p("centerPulse").weight * 0.1))),
         }
     }, [progress, positionedNodes])
 
+    const logoFill = lerpColor(anim.transitionPrep, [255, 255, 255], [249, 250, 251])
+
     return (
         <div style={{ position: "relative", width: "100%", height: "100%" }}>
-            {/* Edges + glow pulses */}
+
+            {/* SVG layer — edges + pulses */}
             <svg
                 viewBox="0 0 100 100"
                 preserveAspectRatio="xMidYMid meet"
@@ -230,6 +261,7 @@ export default function Step1Illustration() {
                     overflow: "visible",
                 }}
             >
+                {/* Edges */}
                 {positionedNodes.map((node) => {
                     const nVis = anim.nodes[node.id]
                     if (nVis < 0.1) return null
@@ -241,60 +273,76 @@ export default function Step1Illustration() {
                             y1={node.y}
                             x2={lerp(node.x, CENTER.x, ep)}
                             y2={lerp(node.y, CENTER.y, ep)}
-                            stroke="rgba(148,163,184,0.25)"
-                            strokeWidth="0.35"
+                            stroke="rgba(71,85,105,0.7)"
+                            strokeWidth="0.15"
                             strokeDasharray="1.2 2"
                             opacity={nVis}
                         />
                     )
                 })}
 
-                {anim.pulse > 0 &&
-                    positionedNodes.map((node) => {
-                        const t = ease(clamp(anim.pulse))
-                        if (t <= 0 || t >= 0.99) return null
-                        const fade = t < 0.3 ? t / 0.3 : t > 0.7 ? (1 - t) / 0.3 : 1
-                        const px = lerp(node.x, CENTER.x, t)
-                        const py = lerp(node.y, CENTER.y, t)
-                        const trailLen = 0.35
-                        const tStart = Math.max(0, t - trailLen)
-                        const tx = lerp(node.x, CENTER.x, tStart)
-                        const ty = lerp(node.y, CENTER.y, tStart)
-                        const gradId = `trail-${node.id}`
-                        return (
-                            <g key={`p-${node.id}`} opacity={fade}>
-                                <defs>
-                                    <linearGradient
-                                        id={gradId}
-                                        x1={tx} y1={ty} x2={px} y2={py}
-                                        gradientUnits="userSpaceOnUse"
-                                    >
-                                        <stop offset="0%"   stopColor="#4182F4" stopOpacity="0" />
-                                        <stop offset="30%"  stopColor="#4182F4" stopOpacity="0.12" />
-                                        <stop offset="100%" stopColor="#4182F4" stopOpacity="0.75" />
-                                    </linearGradient>
-                                    <radialGradient
-                                        id={`glow-${node.id}`}
-                                        cx={px} cy={py} r="3"
-                                        gradientUnits="userSpaceOnUse"
-                                    >
-                                        <stop offset="0%"   stopColor="#4182F4" stopOpacity="0.5" />
-                                        <stop offset="40%"  stopColor="#4182F4" stopOpacity="0.18" />
-                                        <stop offset="100%" stopColor="#4182F4" stopOpacity="0" />
-                                    </radialGradient>
-                                </defs>
-                                <line
-                                    x1={tx} y1={ty} x2={px} y2={py}
-                                    stroke={`url(#${gradId})`}
-                                    strokeWidth="0.6"
-                                    strokeLinecap="round"
-                                />
-                                <circle cx={px} cy={py} r="3" fill={`url(#glow-${node.id})`} />
-                                <circle cx={px} cy={py} r="0.8" fill="#4182F4" />
-                                <circle cx={px} cy={py} r="0.4" fill="#ffffff" />
-                            </g>
-                        )
-                    })}
+                {/* Pulses */}
+                {anim.activePulses.map((pulse, i) => {
+                    const node = positionedNodes.find(n => n.id === pulse.nodeId)
+                    if (!node) return null
+
+                    const fromX = pulse.dir === "in" ? node.x : CENTER.x
+                    const fromY = pulse.dir === "in" ? node.y : CENTER.y
+                    const toX   = pulse.dir === "in" ? CENTER.x : node.x
+                    const toY   = pulse.dir === "in" ? CENTER.y : node.y
+
+                    const px = lerp(fromX, toX, pulse.t)
+                    const py = lerp(fromY, toY, pulse.t)
+                    const trailLen = 0.3
+                    const tStart = Math.max(0, pulse.t - trailLen)
+                    const tx = lerp(fromX, toX, tStart)
+                    const ty = lerp(fromY, toY, tStart)
+                    const fade = pulse.t < 0.15 ? pulse.t / 0.15 : pulse.t > 0.85 ? (1 - pulse.t) / 0.15 : 1
+                    const gradId = `trail-pulse-${i}`
+
+                    return (
+                        <g key={`ap-${i}`} opacity={fade}>
+                            <defs>
+                                <linearGradient id={gradId} x1={tx} y1={ty} x2={px} y2={py} gradientUnits="userSpaceOnUse">
+                                    <stop offset="0%"   stopColor="#4182F4" stopOpacity="0" />
+                                    <stop offset="30%"  stopColor="#4182F4" stopOpacity="0.12" />
+                                    <stop offset="100%" stopColor="#4182F4" stopOpacity="0.75" />
+                                </linearGradient>
+                            </defs>
+                            <line x1={tx} y1={ty} x2={px} y2={py} stroke={`url(#${gradId})`} strokeWidth="0.6" strokeLinecap="round" />
+                            <circle cx={px} cy={py} r="0.8" fill="#4182F4" />
+                            <circle cx={px} cy={py} r="0.4" fill="#ffffff" />
+                        </g>
+                    )
+                })}
+                {/* Final simultaneous pulse */}
+                {anim.finalPulses.map((pulse, i) => {
+                    const node = positionedNodes.find(n => n.id === pulse.nodeId)
+                    if (!node) return null
+
+                    const px = lerp(node.x, CENTER.x, pulse.t)
+                    const py = lerp(node.y, CENTER.y, pulse.t)
+                    const tStart = Math.max(0, pulse.t - 0.3)
+                    const tx = lerp(node.x, CENTER.x, tStart)
+                    const ty = lerp(node.y, CENTER.y, tStart)
+                    const fade = pulse.t < 0.1 ? pulse.t / 0.1 : pulse.t > 0.9 ? (1 - pulse.t) / 0.1 : 1
+                    const gradId = `trail-final-${i}`
+
+                    return (
+                        <g key={`fp-${i}`} opacity={fade}>
+                            <defs>
+                                <linearGradient id={gradId} x1={tx} y1={ty} x2={px} y2={py} gradientUnits="userSpaceOnUse">
+                                    <stop offset="0%"   stopColor="#4182F4" stopOpacity="0" />
+                                    <stop offset="30%"  stopColor="#4182F4" stopOpacity="0.2" />
+                                    <stop offset="100%" stopColor="#4182F4" stopOpacity="0.9" />
+                                </linearGradient>
+                            </defs>
+                            <line x1={tx} y1={ty} x2={px} y2={py} stroke={`url(#${gradId})`} strokeWidth="0.8" strokeLinecap="round" />
+                            <circle cx={px} cy={py} r="1.0" fill="#4182F4" />
+                            <circle cx={px} cy={py} r="0.5" fill="#ffffff" />
+                        </g>
+                    )
+                })}
             </svg>
 
             {/* Center node */}
@@ -312,7 +360,7 @@ export default function Step1Illustration() {
                     <div
                         style={{
                             position: "absolute",
-                            inset: -10 - anim.centerPulse * 20,
+                            inset: -anim.centerPulse * 50,
                             borderRadius: "50%",
                             border: `2px solid rgba(65,130,244,${0.4 * (1 - anim.centerPulse)})`,
                             pointerEvents: "none",
@@ -325,22 +373,22 @@ export default function Step1Illustration() {
                         height: centerSize,
                         borderRadius: "50%",
                         background: "radial-gradient(circle at 36% 34%, #5a9cf5, #2d6ad6)",
-                        boxShadow:
-                            anim.centerGlow > 0
-                                ? `0 0 ${10 + anim.centerGlow * 35}px rgba(65,130,244,${0.15 + anim.centerGlow * 0.45})`
-                                : "0 2px 8px rgba(65,130,244,0.15)",
+                        boxShadow: anim.centerGlow > 0
+                            ? `0 0 ${10 + anim.centerGlow * 35}px rgba(65,130,244,${0.15 + anim.centerGlow * 0.45})`
+                            : "0 2px 8px rgba(65,130,244,0.15)",
                         display: "flex",
                         alignItems: "center",
                         justifyContent: "center",
+                        position: "relative",
+                        overflow: "hidden",
                     }}
                 >
                     <div
                         style={{ width: centerSize * 0.45, height: centerSize * 0.45 }}
                         dangerouslySetInnerHTML={{
-                            __html: FINEGRAINED_SVG.replace(
-                                /<svg /,
-                                '<svg style="width:100%;height:100%" '
-                            ),
+                            __html: FINEGRAINED_SVG
+                                .replace(/<svg /, '<svg style="width:100%;height:100%" ')
+                                .replace(/fill="#ffffff"/g, `fill="${logoFill}"`),
                         }}
                     />
                 </div>
@@ -359,9 +407,6 @@ export default function Step1Illustration() {
                             left: `${node.cssX}%`,
                             top:  `${node.cssY}%`,
                             transform: `translate(-50%,-50%) scale(${(0.4 + vis * 0.6) * (1 + anim.breathe[node.id] * 0.18)})`,
-                            boxShadow: anim.breathe[node.id] > 0.1
-                                ? `0 0 ${anim.breathe[node.id] * 12}px rgba(65,130,244,0.25)`
-                                : "0 1px 3px rgba(0,0,0,0.04)",
                             opacity: vis,
                             zIndex: 4,
                             display: "flex",
@@ -381,10 +426,9 @@ export default function Step1Illustration() {
                                 alignItems: "center",
                                 justifyContent: "center",
                                 flexDirection: "column",
-                                boxShadow:
-                                    anim.pulse > 0
-                                        ? `0 0 ${anim.pulse * 10}px ${isRepo ? "rgba(239,68,68,0.12)" : "rgba(65,130,244,0.12)"}`
-                                        : "0 1px 3px rgba(0,0,0,0.04)",
+                                boxShadow: anim.breathe[node.id] > 0.1
+                                    ? `0 0 ${anim.breathe[node.id] * 12}px rgba(65,130,244,0.25)`
+                                    : "0 1px 3px rgba(0,0,0,0.04)",
                             }}
                         >
                             {isRepo ? (
@@ -427,10 +471,7 @@ export default function Step1Illustration() {
                                         justifyContent: "center",
                                     }}
                                     dangerouslySetInnerHTML={{
-                                        __html: icons[node.id].replace(
-                                            /<svg /,
-                                            '<svg style="width:100%;height:100%" '
-                                        ),
+                                        __html: icons[node.id].replace(/<svg /, '<svg style="width:100%;height:100%" '),
                                     }}
                                 />
                             )}

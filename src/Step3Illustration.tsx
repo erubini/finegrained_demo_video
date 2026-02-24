@@ -2,20 +2,6 @@ import { useMemo } from "react"
 import { useCurrentFrame, useVideoConfig } from "remotion"
 import { PHASES, buildPhases } from "./config"
 
-/*
-  Step3Illustration — "Reconcile What Your Team Actually Knows"
-
-  Adapted for Remotion. Progress is frame-driven instead of scroll-driven.
-  Dimensions are fixed to composition size instead of ResizeObserver.
-
-  Sequence:
-    Phase 1 (people):  4 person avatars appear at corners
-    Phase 2 (circles): Each gets a large colored Venn circle + speech bubble annotation
-    Phase 3 (center):  FineGrained center appears
-    Phase 4 (pulses):  Center sends pulses outward to each person
-    Phase 5 (merge):   Venn circles slide together, annotations fade, unified circle appears
-*/
-
 function ease(t: number) {
     return t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2
 }
@@ -26,6 +12,21 @@ function clamp(t: number) {
 
 function lerp(a: number, b: number, t: number) {
     return a + (b - a) * t
+}
+
+function lerpColor(t: number, from: [number, number, number], to: [number, number, number]): string {
+    const r = Math.round(lerp(from[0], to[0], t))
+    const g = Math.round(lerp(from[1], to[1], t))
+    const b = Math.round(lerp(from[2], to[2], t))
+    return `${r},${g},${b}`
+}
+
+function hexToRgb(hex: string): [number, number, number] {
+    return [
+        parseInt(hex.slice(1, 3), 16),
+        parseInt(hex.slice(3, 5), 16),
+        parseInt(hex.slice(5, 7), 16),
+    ]
 }
 
 const CENTER = { x: 50, y: 52 }
@@ -135,46 +136,47 @@ const FINEGRAINED_SVG = `
 `.trim()
 
 export default function Step3Illustration() {
-    // ─── Remotion: derive progress from current frame ────────────────────────
     const frame = useCurrentFrame()
     const { durationInFrames, width, height } = useVideoConfig()
     const progress = frame / durationInFrames
 
-    // ─── Fixed dimensions from composition config ────────────────────────────
     const minDim     = Math.min(width, height)
     const personSize = minDim * 0.09
     const centerSize = minDim * 0.14
     const fontSize   = Math.max(8, minDim * 0.018)
-    
+
     const svgOffsetX = (width - height) / 2
     const toCSS_X = (svgX: number) => (svgOffsetX + (svgX / 100) * height) / width * 100
 
     const anim = useMemo(() => {
-        const { starts, weights } = buildPhases(PHASES.step3) // change stepN per component
+        const { starts, weights } = buildPhases(PHASES.step3)
         const p = (key: string) => ({
             start:  (starts  as Record<string, number>)[key],
             weight: (weights as Record<string, number>)[key],
         })
 
         const people: Record<string, number> = {}
-        PEOPLE.forEach((person, i) => {
-            const stagger = (i / PEOPLE.length) * p("people").weight
+        PEOPLE.forEach((person) => {
             people[person.id] = ease(
                 clamp(
-                    (progress - p("people").start - stagger) /
+                    (progress - p("people").start) /
                         (p("people").weight * 0.5)
                 )
             )
         })
 
-        const circleProg  = ease(clamp((progress - p("circles").start) / p("circles").weight))
-        const centerProg  = clamp((progress - p("center").start) / p("center").weight)
-        const pulseProg   = clamp((progress - p("pulses").start) / p("pulses").weight)
-        const mergeProg   = ease(clamp((progress - p("merge").start) / p("merge").weight))
+        const circleProg = ease(clamp((progress - p("circles").start) / p("circles").weight))
+        const centerProg = clamp((progress - p("center").start) / p("center").weight)
+        const pulseProg  = clamp((progress - p("pulses").start) / p("pulses").weight)
+        const mergeProg  = ease(clamp((progress - p("merge").start) / p("merge").weight))
+        const colorT     = ease(clamp((mergeProg - 0.85) / 0.15))
+        const rippleProg = clamp((progress - (p("merge").start + p("merge").weight)) / 0.08)
 
         return {
             people,
             circleProg,
+            colorT,
+            rippleProg,
             centerScale: ease(clamp(centerProg / 0.7)),
             centerGlow:  clamp((centerProg - 0.5) / 0.5),
             pulseProg,
@@ -201,32 +203,32 @@ export default function Step3Illustration() {
                     PEOPLE.map((person) => {
                         const vis = anim.people[person.id]
                         if (vis < 0.1) return null
-                        const cx    = lerp(person.circleX, CENTER.x, anim.mergeProg)
-                        const cy    = lerp(person.circleY, CENTER.y, anim.mergeProg)
-                        const r     = lerp(18, 20, anim.mergeProg)
-                        const alpha = anim.circleProg * lerp(1, 0, clamp(anim.mergeProg * 1.5))
+                        const cx  = lerp(person.circleX, CENTER.x, anim.mergeProg)
+                        const cy  = lerp(person.circleY, CENTER.y, anim.mergeProg)
+                        const r   = lerp(18, 20, anim.mergeProg)
+                        const rgb = lerpColor(anim.colorT, hexToRgb(person.color), [65, 130, 244])
                         return (
                             <circle
                                 key={`venn-${person.id}`}
                                 cx={cx} cy={cy} r={r}
-                                fill={`${person.color}15`}
-                                stroke={`${person.color}50`}
+                                fill={`rgba(${rgb},0.1)`}
+                                stroke={`rgba(${rgb},0.5)`}
                                 strokeWidth="0.5"
-                                opacity={alpha}
+                                opacity={anim.circleProg}
                             />
                         )
                     })}
 
-                {/* Unified circle */}
-                {anim.mergeProg > 0.3 && (
+                {/* Ripple — starts at merged circle edge (r=20), expands outward linearly */}
+                {anim.rippleProg > 0 && (
                     <circle
                         cx={CENTER.x}
                         cy={CENTER.y}
-                        r={lerp(10, 22, ease(clamp((anim.mergeProg - 0.3) / 0.7)))}
-                        fill="rgba(65,130,244,0.08)"
-                        stroke="rgba(65,130,244,0.3)"
-                        strokeWidth="0.6"
-                        opacity={ease(clamp((anim.mergeProg - 0.3) * 3))}
+                        r={lerp(20, 40, anim.rippleProg)}
+                        fill="none"
+                        stroke="rgba(65,130,244,0.4)"
+                        strokeWidth="0.5"
+                        opacity={1 - anim.rippleProg}
                     />
                 )}
 
@@ -250,15 +252,15 @@ export default function Step3Illustration() {
                 {/* Outward pulses */}
                 {anim.pulseProg > 0 &&
                     PEOPLE.map((person) => {
-                        const t = ease(clamp(anim.pulseProg))
+                        const t = clamp(anim.pulseProg)
                         if (t <= 0 || t >= 0.99) return null
-                        const fade    = t < 0.3 ? t / 0.3 : t > 0.7 ? (1 - t) / 0.3 : 1
-                        const px      = lerp(CENTER.x, person.x, t)
-                        const py      = lerp(CENTER.y, person.y, t)
-                        const tStart  = Math.max(0, t - 0.35)
-                        const tx      = lerp(CENTER.x, person.x, tStart)
-                        const ty      = lerp(CENTER.y, person.y, tStart)
-                        const gradId  = `pulse-trail-${person.id}`
+                        const fade   = t < 0.3 ? t / 0.3 : t > 0.7 ? (1 - t) / 0.3 : 1
+                        const px     = lerp(CENTER.x, person.x, t)
+                        const py     = lerp(CENTER.y, person.y, t)
+                        const tStart = Math.max(0, t - 0.35)
+                        const tx     = lerp(CENTER.x, person.x, tStart)
+                        const ty     = lerp(CENTER.y, person.y, tStart)
+                        const gradId = `pulse-trail-${person.id}`
                         return (
                             <g key={`pulse-${person.id}`} opacity={fade}>
                                 <defs>
