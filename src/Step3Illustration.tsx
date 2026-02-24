@@ -171,18 +171,25 @@ export default function Step3Illustration() {
         const mergeProg  = ease(clamp((progress - p("merge").start) / p("merge").weight))
         const colorT     = ease(clamp((mergeProg - 0.85) / 0.15))
         const rippleProg = clamp((progress - (p("merge").start + p("merge").weight)) / 0.08)
+        const transitionPrep = ease(clamp(
+            (progress - (p("pauseAfterMerge").start + p("pauseAfterMerge").weight * 0.5)) /
+            (p("pauseAfterMerge").weight * 0.5)
+        ))
 
         return {
             people,
             circleProg,
             colorT,
             rippleProg,
+            transitionPrep,
             centerScale: ease(clamp(centerProg / 0.7)),
             centerGlow:  clamp((centerProg - 0.5) / 0.5),
             pulseProg,
             mergeProg,
         }
     }, [progress])
+
+    const logoFill = `rgb(${lerpColor(anim.transitionPrep, [255, 255, 255], [249, 250, 251])})`
 
     return (
         <div style={{ position: "relative", width: "100%", height: "100%" }}>
@@ -367,10 +374,9 @@ export default function Step3Illustration() {
                     <div
                         style={{ width: centerSize * 0.45, height: centerSize * 0.45 }}
                         dangerouslySetInnerHTML={{
-                            __html: FINEGRAINED_SVG.replace(
-                                /<svg /,
-                                '<svg style="width:100%;height:100%" '
-                            ),
+                            __html: FINEGRAINED_SVG
+                                .replace(/<svg /, '<svg style="width:100%;height:100%" ')
+                                .replace(/fill="#ffffff"/g, `fill="${logoFill}"`),
                         }}
                     />
                 </div>

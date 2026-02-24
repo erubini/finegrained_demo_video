@@ -21,7 +21,7 @@ const transType   = (key: keyof typeof TRANSITIONS) =>
 
 export const Video: React.FC = () => {
     const frame = useCurrentFrame()
-    const stepsduration = phaseDuration(PHASES.step1) + phaseDuration(PHASES.step2) + phaseDuration(PHASES.step3)
+    const stepsduration = phaseDuration(PHASES.step1) + phaseDuration(PHASES.step2) + phaseDuration(PHASES.step3) + phaseDuration(PHASES.step4)
     const isHero = frame >= stepsduration
     return (
         <>
@@ -41,7 +41,7 @@ export const Video: React.FC = () => {
                     </TransitionSeries.Sequence>
 
                     <TransitionSeries.Transition
-                        presentation={zoomCamera("#F9FAFB", 49.972, 48.02)}
+                        presentation={zoomCamera("#F9FAFB", 49.893, 48.02)}
                         timing={linearTiming({ durationInFrames: transFrames("step1ToStep2") })}
                     />
 
@@ -59,7 +59,7 @@ export const Video: React.FC = () => {
                     </TransitionSeries.Sequence>
 
                     <TransitionSeries.Transition
-                        presentation={zoomCamera("#F9FAFB", 48.5, 52)}
+                        presentation={zoomCamera("#F9FAFB", 49.888, 50.166)}
                         timing={linearTiming({ durationInFrames: transFrames("step3ToStep4") })}
                     />
 
@@ -68,7 +68,7 @@ export const Video: React.FC = () => {
                     </TransitionSeries.Sequence>
 
                     <TransitionSeries.Transition
-                        presentation={zoomCamera("step4ToStep5")}
+                        presentation={zoomCamera("#F9FAFB", 50, 50)}
                         timing={linearTiming({ durationInFrames: transFrames("step4ToStep5") })}
                     />
 

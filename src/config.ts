@@ -50,9 +50,10 @@ export const PHASES = {
         pauseAfterCenter: 1,
         pulses:  1.3,
         merge:   4,
-        pauseAfterMerge: 6,
+        pauseAfterMerge: 11,
     },
     step4: {
+        pausebeforeEngineers: 5,
         engineers:  1.3,
         managers:   1.5,
         leadership: 1.5,
@@ -79,7 +80,7 @@ export const TRANSITIONS = {
     heroToStep1:  { type: "fade",  seconds: 0.7 },
     step1ToStep2: { type: "zoom", seconds: 5 },
     step2ToStep3: { type: "zoom", seconds: 7 },
-    step3ToStep4: { type: "zoom", seconds: 0.5 },
+    step3ToStep4: { type: "zoom", seconds: 5 },
     step4ToStep5: { type: "slide", seconds: 0.5 },
     step5ToStep6: { type: "slide", seconds: 0.5 },
 }

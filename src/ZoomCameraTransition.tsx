@@ -15,7 +15,7 @@ const ZoomCameraComponent = ({
     const p = ease(presentationProgress)
 
     if (presentationDirection === "exiting") {
-        const scale = 1 + p * 280
+        const scale = 1 + p * 300
 
         return (
             <AbsoluteFill style={{ overflow: "hidden" }}>
