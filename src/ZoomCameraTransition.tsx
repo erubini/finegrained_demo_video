@@ -1,4 +1,3 @@
-import React from "react"
 import { AbsoluteFill } from "remotion"
 import { TransitionPresentation, TransitionPresentationComponentProps } from "@remotion/transitions"
 
@@ -11,11 +10,11 @@ const ZoomCameraComponent = ({
     presentationDirection,
     presentationProgress,
     passedProps,
-}: TransitionPresentationComponentProps<{ color: string; targetX: number; targetY: number }>) => {
+}: TransitionPresentationComponentProps<{ color: string; targetX: number; targetY: number; scale: number }>) => {
     const p = ease(presentationProgress)
 
     if (presentationDirection === "exiting") {
-        const scale = 1 + p * 300
+        const scale = 1 + p * passedProps.scale
 
         return (
             <AbsoluteFill style={{ overflow: "hidden" }}>
@@ -40,7 +39,8 @@ export const zoomCamera = (
     color: string = "#F9FAFB",
     targetX: number = 49.972,
     targetY: number = 48.02,
-): TransitionPresentation<{ color: string; targetX: number; targetY: number }> => ({
+    scale: number = 300,
+): TransitionPresentation<{ color: string; targetX: number; targetY: number; scale: number }> => ({
     component: ZoomCameraComponent,
-    props: { color, targetX, targetY },
+    props: { color, targetX, targetY, scale },
 })

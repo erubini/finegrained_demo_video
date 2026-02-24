@@ -54,17 +54,25 @@ export const PHASES = {
     },
     step4: {
         pausebeforeEngineers: 5,
-        engineers:  1.3,
+        engineers:  1.5,
+        pausebeforeManagers: 0.5,
         managers:   1.5,
+        pausebeforeLeadership: 0.5,
         leadership: 1.5,
+        pausebeforeApprove: 8,
         approve:    1.7,
+        pauseafterApprove: 5,
     },
     step5: {
+        pausebeforeCard: 2,
         card:     0.9,
         expand:   1.2,
         context:  1.3,
+        pausebeforePrompt: 0.7,
         prompt:   1.1,
+        pausebeforeComplete: 1,
         complete: 1.5,
+        pauseafterComplete: 1,
     },
     step6: {
         diff:  1.1,
@@ -81,7 +89,7 @@ export const TRANSITIONS = {
     step1ToStep2: { type: "zoom", seconds: 5 },
     step2ToStep3: { type: "zoom", seconds: 7 },
     step3ToStep4: { type: "zoom", seconds: 5 },
-    step4ToStep5: { type: "slide", seconds: 0.5 },
+    step4ToStep5: { type: "zoom", seconds: 5 },
     step5ToStep6: { type: "slide", seconds: 0.5 },
 }
 

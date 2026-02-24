@@ -21,16 +21,16 @@ const transType   = (key: keyof typeof TRANSITIONS) =>
 
 export const Video: React.FC = () => {
     const frame = useCurrentFrame()
-    const stepsduration = phaseDuration(PHASES.step1) + phaseDuration(PHASES.step2) + phaseDuration(PHASES.step3) + phaseDuration(PHASES.step4)
+    const stepsduration = phaseDuration(PHASES.step1) + phaseDuration(PHASES.step2) + phaseDuration(PHASES.step3) + phaseDuration(PHASES.step4) + phaseDuration(PHASES.step5) + phaseDuration(PHASES.step6)
     const isHero = frame >= stepsduration
     return (
         <>
             {/* Hero background */}
-            <AbsoluteFill style={{ 
+            <AbsoluteFill style={{
                 background: "linear-gradient(180deg, #3b82f6 0%, #a5d0fc 100%)",
                 opacity: isHero ? 1 : 0,
             }} />
-            <AbsoluteFill style={{ 
+            <AbsoluteFill style={{
                 background: "#F9FAFB",
                 opacity: isHero ? 0 : 1,
             }} />
@@ -59,7 +59,7 @@ export const Video: React.FC = () => {
                     </TransitionSeries.Sequence>
 
                     <TransitionSeries.Transition
-                        presentation={zoomCamera("#F9FAFB", 49.888, 50.166)}
+                        presentation={zoomCamera("#F9FAFB", 49.888, 50.166, 400)}
                         timing={linearTiming({ durationInFrames: transFrames("step3ToStep4") })}
                     />
 
@@ -68,18 +68,31 @@ export const Video: React.FC = () => {
                     </TransitionSeries.Sequence>
 
                     <TransitionSeries.Transition
-                        presentation={zoomCamera("#F9FAFB", 50, 50)}
+                        presentation={zoomCamera("#F9FAFB", 47.846, 86.112)}
                         timing={linearTiming({ durationInFrames: transFrames("step4ToStep5") })}
+                    />
+
+                    <TransitionSeries.Sequence durationInFrames={phaseDuration(PHASES.step5)}>
+                        <Step5Illustration />
+                    </TransitionSeries.Sequence>
+
+                    <TransitionSeries.Transition
+                        presentation={transType("step5ToStep6")}
+                        timing={linearTiming({ durationInFrames: transFrames("step5ToStep6") })}
+                    />
+
+                    <TransitionSeries.Sequence durationInFrames={phaseDuration(PHASES.step6)}>
+                        <Step7Illustration />
+                    </TransitionSeries.Sequence>
+
+                    <TransitionSeries.Transition
+                        presentation={transType("heroToStep1")}
+                        timing={linearTiming({ durationInFrames: transFrames("heroToStep1") })}
                     />
 
                     <TransitionSeries.Sequence durationInFrames={s(PHASES.hero.duration)}>
                         <HeroContextLayer />
                     </TransitionSeries.Sequence>
-
-                    <TransitionSeries.Transition
-                        presentation={transType("step1ToStep2")}
-                        timing={linearTiming({ durationInFrames: transFrames("step1ToStep2") })}
-                    />
                 </TransitionSeries>
 
             <Audio src={staticFile(AUDIO.voiceover.file)} volume={AUDIO.voiceover.volume} startFrom={s(AUDIO.voiceover.startAt)} />

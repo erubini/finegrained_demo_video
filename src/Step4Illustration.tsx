@@ -333,49 +333,64 @@ export default function Step4Illustration() {
             {anim.leadVis > 0.01 && (
                 <div style={{
                     position: "absolute",
-                    left: 8,
-                    top: `${(leadRowY - 0.06) * 100}%`,
-                    fontSize: Math.max(8, base * 0.017),
-                    fontWeight: 600,
-                    color: leadColor,
-                    fontFamily: '"SF Mono","Fira Code",monospace',
-                    letterSpacing: "0.06em",
-                    textTransform: "uppercase",
+                    left: leadX * dims.w,
+                    top: `${(leadRowY - 0.07) * 100}%`,
+                    transform: "translateX(-50%)",
+                    whiteSpace: "nowrap",
                     opacity: anim.leadVis * 0.7,
                 }}>
-                    Leadership
+                    <span style={{
+                        display: "inline-block",
+                        marginRight: "-0.06em",
+                        fontSize: Math.max(8, base * 0.017),
+                        fontWeight: 600,
+                        color: leadColor,
+                        fontFamily: '"SF Mono","Fira Code",monospace',
+                        letterSpacing: "0.06em",
+                        textTransform: "uppercase",
+                    }}>Leadership</span>
                 </div>
             )}
             {anim.mgrVis > 0.01 && (
                 <div style={{
                     position: "absolute",
-                    left: 8,
-                    top: `${(mgrRowY - 0.06) * 100}%`,
-                    fontSize: Math.max(8, base * 0.017),
-                    fontWeight: 600,
-                    color: mgrColor,
-                    fontFamily: '"SF Mono","Fira Code",monospace',
-                    letterSpacing: "0.06em",
-                    textTransform: "uppercase",
+                    left: mgrXs[0] * dims.w,
+                    top: `${(mgrRowY - 0.07) * 100}%`,
+                    transform: "translateX(-50%)",
+                    whiteSpace: "nowrap",
                     opacity: anim.mgrVis * 0.7,
                 }}>
-                    Managers
+                    <span style={{
+                        display: "inline-block",
+                        marginRight: "-0.06em",
+                        fontSize: Math.max(8, base * 0.017),
+                        fontWeight: 600,
+                        color: mgrColor,
+                        fontFamily: '"SF Mono","Fira Code",monospace',
+                        letterSpacing: "0.06em",
+                        textTransform: "uppercase",
+                    }}>Managers</span>
                 </div>
             )}
             {anim.engVis > 0.01 && (
                 <div style={{
                     position: "absolute",
-                    left: 8,
-                    top: `${(engRowY - 0.06) * 100}%`,
-                    fontSize: Math.max(8, base * 0.017),
-                    fontWeight: 600,
-                    color: engColor,
-                    fontFamily: '"SF Mono","Fira Code",monospace',
-                    letterSpacing: "0.06em",
-                    textTransform: "uppercase",
+                    left: engXs[0] * dims.w,
+                    top: `${(engRowY - 0.07) * 100}%`,
+                    transform: "translateX(-50%)",
+                    whiteSpace: "nowrap",
                     opacity: anim.engVis * 0.7,
                 }}>
-                    Engineers
+                    <span style={{
+                        display: "inline-block",
+                        marginRight: "-0.06em",
+                        fontSize: Math.max(8, base * 0.017),
+                        fontWeight: 600,
+                        color: engColor,
+                        fontFamily: '"SF Mono","Fira Code",monospace',
+                        letterSpacing: "0.06em",
+                        textTransform: "uppercase",
+                    }}>Engineers</span>
                 </div>
             )}
 
