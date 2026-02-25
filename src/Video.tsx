@@ -76,11 +76,6 @@ export const Video: React.FC = () => {
                         <Step5Illustration />
                     </TransitionSeries.Sequence>
 
-                    <TransitionSeries.Transition
-                        presentation={transType("step5ToStep6")}
-                        timing={linearTiming({ durationInFrames: transFrames("step5ToStep6") })}
-                    />
-
                     <TransitionSeries.Sequence durationInFrames={phaseDuration(PHASES.step6)}>
                         <Step7Illustration />
                     </TransitionSeries.Sequence>

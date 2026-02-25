@@ -1,6 +1,7 @@
 import { useMemo } from "react"
 import { useCurrentFrame, useVideoConfig } from "remotion"
 import { PHASES, buildPhases } from "./config"
+import WindowFrame from "./WindowFrame"
 
 /*
   Step6Illustration — "Close the Loop"
@@ -146,7 +147,7 @@ export default function Step6Illustration() {
     // ─── Fixed dimensions from composition config ────────────────────────────
     const dims = { w: width, h: height }
     const base = Math.min(width, height)
-    const pad  = base * 0.018
+    const pad  = base * 0.02
 
     const anim = useMemo(() => {
         const { starts, weights } = buildPhases(PHASES.step6) // change stepN per component
@@ -156,7 +157,7 @@ export default function Step6Illustration() {
         })
 
         return {
-            diffVis:   ease(clamp((progress - p("diff").start)  / (p("diff").weight  * 0.6))),
+            diffVis:   ease(clamp((progress - p("diff").start)  /  p("diff").weight)),
             cardsProg: ease(clamp((progress - p("cards").start) /  p("cards").weight)),
             shiftProg: ease(clamp((progress - p("shift").start) /  p("shift").weight)),
             flowProg:       clamp((progress - p("flow").start)  /  p("flow").weight),
@@ -164,21 +165,19 @@ export default function Step6Illustration() {
         }
     }, [progress])
 
-    // Diff panel geometry
-    const diffMargin  = base * 0.03
-    const diffFullW   = dims.w - diffMargin * 2
-    const diffShiftedW = dims.w * 0.42
-    const diffW = lerp(diffFullW, diffShiftedW, anim.shiftProg)
-    const diffH = dims.h * 0.85
-    const diffX = lerp(diffMargin, diffMargin * 0.5, anim.shiftProg)
-    const diffY = dims.h * 0.5 - diffH / 2
+    // Diff panel geometry — matches Step 5 card sizing and position
+    const diffW      = base * 0.52
+    const diffH      = base * 0.85
+    const diffXFinal = dims.w * 0.52 - diffW / 2
+    const diffXRest  = lerp(diffXFinal, base * 0.03, anim.shiftProg)
+    const diffY      = dims.h * 0.5 - diffH / 2
 
     // Card dimensions
     const cardW = base * 0.2
     const cardH = base * 0.12
 
-    // Cards X position shifts with the diff panel
-    const cardBaseX = lerp(dims.w * 0.72, dims.w * 0.42 + diffMargin, anim.shiftProg)
+    // Cards X position follows the right edge of the diff panel as it shifts
+    const cardBaseX = lerp(diffXFinal + diffW + base * 0.02, base * 0.03 + diffW + base * 0.02, anim.shiftProg)
 
     // FineGrained node
     const fgX    = dims.w * 0.82
@@ -249,45 +248,11 @@ export default function Step6Illustration() {
             </svg>
 
             {/* Code diff panel */}
-            {anim.diffVis > 0.01 && (
-                <div
-                    style={{
-                        position: "absolute",
-                        left: diffX,
-                        top: diffY,
-                        width: diffW,
-                        height: diffH,
-                        borderRadius: 10,
-                        background: "rgba(255,255,255,0.97)",
-                        border: "1.5px solid rgba(100,116,139,0.15)",
-                        boxShadow: "0 2px 12px rgba(0,0,0,0.06)",
-                        opacity: anim.diffVis,
-                        transform: `scale(${0.9 + anim.diffVis * 0.1})`,
-                        zIndex: 3,
-                        overflow: "hidden",
-                        display: "flex",
-                        flexDirection: "column",
-                    }}
-                >
-                    {/* Header */}
-                    <div
-                        style={{
-                            height: base * 0.05,
-                            borderBottom: "1px solid rgba(100,116,139,0.08)",
-                            display: "flex",
-                            alignItems: "center",
-                            padding: `0 ${pad * 1.2}px`,
-                            gap: pad,
-                            flexShrink: 0,
-                        }}
-                    >
-                        <svg width={base * 0.02} height={base * 0.02} viewBox="0 0 24 24" fill="none">
-                            <path d="M9 12h6M12 9v6" stroke="#2563eb" strokeWidth="2" strokeLinecap="round" />
-                            <circle cx="12" cy="12" r="9" stroke="#2563eb" strokeWidth="1.5" />
-                        </svg>
-                        <div style={{ width: "30%", height: base * 0.01, borderRadius: 2, background: "rgba(30,41,59,0.5)" }} />
-                        <div style={{ marginLeft: "auto", width: "12%", height: base * 0.008, borderRadius: 2, background: "rgba(148,163,184,0.25)" }} />
-                    </div>
+            <WindowFrame
+                x={diffXRest} y={diffY} w={diffW} h={diffH}
+                base={base} pad={pad}
+                contentTranslateX={(1 - anim.diffVis) * (diffW + pad * 2)}
+            >
 
                     {/* File path bar */}
                     <div
@@ -313,8 +278,6 @@ export default function Step6Illustration() {
                         }}
                     >
                         {DIFF_LINES.map((line, i) => {
-                            const lineOpacity = clamp((anim.diffVis - i * 0.03) * 3)
-                            const bgColor  = line.type === "added"   ? "rgba(34,197,94,0.06)"  : line.type === "removed" ? "rgba(239,68,68,0.06)" : "transparent"
                             const barColor = line.type === "added"   ? "rgba(34,197,94,0.35)"  : line.type === "removed" ? "rgba(239,68,68,0.3)"  : "rgba(148,163,184,0.2)"
                             const prefix   = line.type === "added"   ? "+" : line.type === "removed" ? "−" : " "
                             const prefixColor = line.type === "added" ? "#22c55e" : line.type === "removed" ? "#ef4444" : "transparent"
@@ -326,10 +289,7 @@ export default function Step6Illustration() {
                                         display: "flex",
                                         alignItems: "center",
                                         gap: pad * 0.4,
-                                        background: bgColor,
-                                        borderRadius: 2,
                                         padding: `${pad * 0.2}px ${pad * 0.4}px`,
-                                        opacity: lineOpacity,
                                     }}
                                 >
                                     <span style={{ fontSize: Math.max(7, base * 0.012), fontFamily: '"SF Mono","Fira Code",monospace', color: "rgba(148,163,184,0.4)", width: base * 0.02, textAlign: "right", flexShrink: 0 }}>
@@ -343,8 +303,7 @@ export default function Step6Illustration() {
                             )
                         })}
                     </div>
-                </div>
-            )}
+            </WindowFrame>
 
             {/* Annotation cards */}
             {CARDS.map((card, i) => {

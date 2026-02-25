@@ -64,18 +64,19 @@ export const PHASES = {
         pauseafterApprove: 5,
     },
     step5: {
-        pausebeforeCard: 2,
+        pausebeforeCard: 1.5,
         card:     0.9,
         expand:   1.2,
+        pausebeforeContext: 0.5,
         context:  1.3,
         pausebeforePrompt: 0.7,
         prompt:   1.1,
         pausebeforeComplete: 1,
         complete: 1.5,
-        pauseafterComplete: 1,
+        slideOut: 0.8,
     },
     step6: {
-        diff:  1.1,
+        diff:  1,
         cards: 1.1,
         shift: 1.1,
         flow:  1.5,
@@ -90,7 +91,7 @@ export const TRANSITIONS = {
     step2ToStep3: { type: "zoom", seconds: 7 },
     step3ToStep4: { type: "zoom", seconds: 5 },
     step4ToStep5: { type: "zoom", seconds: 5 },
-    step5ToStep6: { type: "slide", seconds: 0.5 },
+    step5ToStep6: { type: "fade",  seconds: 0.5 },
 }
 
 // ─── Audio ────────────────────────────────────────────────────────────────────
