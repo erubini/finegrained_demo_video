@@ -82,18 +82,20 @@ export const PHASES = {
         node:  0.8,
         flow:  1.5,
         pulse: 1.2,
-        pauseafterPulse: 10,
+        pauseafterPulse: 0.5,
+        slideOut:      1.2,
+        pauseAtCenter: 2,
     },
 }
 
 // ─── Transitions ──────────────────────────────────────────────────────────────
 export const TRANSITIONS = {
-    heroToStep1:  { type: "fade",  seconds: 0.7 },
     step1ToStep2: { type: "zoom", seconds: 5 },
     step2ToStep3: { type: "zoom", seconds: 7 },
     step3ToStep4: { type: "zoom", seconds: 5 },
     step4ToStep5: { type: "zoom", seconds: 5 },
     step5ToStep6: { type: "fade",  seconds: 0.5 },
+    step6ToHero:  { type: "fade",  seconds: 0.7 },
 }
 
 // ─── Audio ────────────────────────────────────────────────────────────────────

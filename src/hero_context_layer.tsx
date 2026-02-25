@@ -18,6 +18,14 @@ import { PHASES, s } from "./config"
 
 // ─── SVG Assets ─────────────────────────────────────────────────────────────────
 
+function ease(t: number) {
+    return t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2
+}
+
+function clamp(t: number) {
+    return Math.max(0, Math.min(1, t))
+}
+
 const FINEGRAINED_SVG = `
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200">
   <g fill="#ffffff">
@@ -224,8 +232,8 @@ const NODE_STYLES = {
 
 const CYCLE_FRAMES     = s(PHASES.hero.cycleSeconds)
 const PULSE_FRAMES     = s(PHASES.hero.pulseSeconds)
-const IMPACT_FRAMES    = s(PHASES.hero.impactSeconds)
 const CARD_FADE_FRAMES = s(PHASES.hero.cardFadeSeconds)
+const NODE_APPEAR_FRAME = 21 // change this number to control when node appears
 
 // ─── Canvas Utilities ─────────────────────────────────────────────────────────────
 
@@ -320,7 +328,7 @@ export default function hero_context_layer() {
     const { width, height, fps } = useVideoConfig()
 
     const dims = { w: width, h: height }
-    const CENTER_RADIUS = Math.min(width, height) * 0.065
+    const CENTER_RADIUS = Math.min(width, height) * 0.07
     const OUTER_RADIUS  = Math.min(width, height) * 0.045
 
     // ─── Image loading with delayRender ──────────────────────────────────────
@@ -434,31 +442,31 @@ export default function hero_context_layer() {
     // ─── Frame-based animation state ──────────────────────────────────────────
     const cycleIndex   = Math.floor(frame / CYCLE_FRAMES)
     const frameInCycle = frame % CYCLE_FRAMES
+    const rippleProg = clamp((frameInCycle - PULSE_FRAMES) / (CYCLE_FRAMES - PULSE_FRAMES))
 
-    const isEven = cycleIndex % 2 === 0
-    const halfIdx = Math.floor(cycleIndex / 2)
+    const inboundMsgs    = MESSAGES.filter(m => m.direction === "to")
+    const inboundNodeIds = [...new Set(inboundMsgs.map(m => m.nodeId))]
 
-    const inboundMsgs  = MESSAGES.filter(m => m.direction === "to")
-    const outboundMsgs = MESSAGES.filter(m => m.direction === "from")
+    // Deterministic pseudo-random seeded on cycleIndex (safe for Remotion frame rendering)
+    const rnd1 = (Math.sin(cycleIndex * 127.1 + 311.7) * 43758.5453) % 1
+    const rnd2 = (Math.sin(cycleIndex * 269.5 + 183.3) * 43758.5453) % 1
+    const r1 = rnd1 < 0 ? rnd1 + 1 : rnd1
+    const r2 = rnd2 < 0 ? rnd2 + 1 : rnd2
 
-    const pool       = isEven ? inboundMsgs : outboundMsgs
+    const currentNodeId = inboundNodeIds[Math.floor(r1 * inboundNodeIds.length)]
+    const nodePool      = inboundMsgs.filter(m => m.nodeId === currentNodeId)
+    const currentMsg    = nodePool[Math.floor(r2 * nodePool.length)]
 
-    // Step through pool sequentially — guaranteed variety, no repetition until all used
-    // The offset (3 for inbound, 7 for outbound) just starts mid-pool so it doesn't feel sequential
-    const offset     = isEven ? 3 : 7
-    const currentMsg = pool[(halfIdx + offset) % pool.length]
-
-    const isInbound = currentMsg.direction === "to"
+    const isInbound = true
     const outerNode = positionedNodes.find(n => n.id === currentMsg.nodeId) || positionedNodes[0]
 
     const pulseProgress  = Math.min(frameInCycle / PULSE_FRAMES, 1)
     const isPulseActive  = frameInCycle < PULSE_FRAMES
-    const isImpactActive = frameInCycle >= PULSE_FRAMES && frameInCycle < PULSE_FRAMES + IMPACT_FRAMES
-    const impactProgress = isImpactActive ? (frameInCycle - PULSE_FRAMES) / IMPACT_FRAMES : 0
     const cardOpacity    = Math.min(frameInCycle / CARD_FADE_FRAMES, 1)
 
     // Time proxy for breathing effects (mimics `timestamp` in ms)
     const t = (frame / fps) * 1000
+    const nodeOpacity = frame >= NODE_APPEAR_FRAME ? 1 : 0
 
     // ─── Canvas draw ───────────────────────────────────────────────────────────
     useEffect(() => {
@@ -478,8 +486,7 @@ export default function hero_context_layer() {
 
         const cxC = CENTER.x * w
         const cyC = CENTER.y * h
-        const cBreath = 1 + Math.sin(t * 0.001) * 0.03
-        const cR = CENTER_RADIUS * cBreath
+        const cR = CENTER_RADIUS
         const nodePixels = new Map(positionedNodes.map(node => [
             node.id,
             {
@@ -488,47 +495,18 @@ export default function hero_context_layer() {
             }
         ]))
 
-        // Draw edges
+        // Draw edges (center-to-center; outer nodes + center circle drawn on top create natural gap)
         positionedNodes.forEach((node) => {
             const { x: nx, y: ny } = nodePixels.get(node.id)!
-            const from = borderPoint(nx, ny, OUTER_RADIUS, cxC, cyC)
-            const to   = borderPoint(cxC, cyC, cR * 1.2, nx, ny)
             ctx.beginPath()
-            ctx.moveTo(from.x, from.y)
-            ctx.lineTo(to.x, to.y)
-            ctx.strokeStyle = "rgba(255, 255, 255, 0.50)"
-            ctx.lineWidth = 1.5
-            ctx.setLineDash([3, 5])
+            ctx.moveTo(nx, ny)
+            ctx.lineTo(cxC, cyC)
+            ctx.strokeStyle = "rgba(71,85,105,0.7)"
+            ctx.lineWidth = 1
+            ctx.setLineDash([9, 14])
             ctx.stroke()
             ctx.setLineDash([])
         })
-
-        // Impact effect
-        if (isImpactActive && outerNode) {
-            const prog = impactProgress
-            const targetIsCenter = isInbound
-            const op = nodePixels.get(outerNode.id)!
-            const tx_ = targetIsCenter ? cxC : op.x
-            const ty_ = targetIsCenter ? cyC : op.y
-            const tr  = targetIsCenter ? cR  : OUTER_RADIUS
-            const ringOpacity = 1 - prog
-            const ringExpand  = 1 + prog * 0.6
-            const sourceColor = SOURCE_COLORS[currentMsg.source] || "#4182F4"
-
-            ctx.beginPath()
-            ctx.arc(tx_, ty_, tr * ringExpand, 0, Math.PI * 2)
-            ctx.strokeStyle = sourceColor + Math.round(ringOpacity * 180).toString(16).padStart(2, "0")
-            ctx.lineWidth = 3 * (1 - prog * 0.5)
-            ctx.stroke()
-
-            const impGlow = ctx.createRadialGradient(tx_, ty_, tr, tx_, ty_, tr * (1 + prog * 1.5))
-            impGlow.addColorStop(0, sourceColor + Math.round(ringOpacity * 100).toString(16).padStart(2, "0"))
-            impGlow.addColorStop(1, "transparent")
-            ctx.beginPath()
-            ctx.arc(tx_, ty_, tr * (1 + prog * 1.5), 0, Math.PI * 2)
-            ctx.fillStyle = impGlow
-            ctx.fill()
-        }
 
         // Draw outer nodes
         positionedNodes.forEach((node) => {
@@ -575,24 +553,7 @@ export default function hero_context_layer() {
             }
         })
 
-        // Glow rings
-        for (let i = 3; i >= 0; i--) {
-            const gr = cR * (1.5 + i * 0.6)
-            const grad = ctx.createRadialGradient(cxC, cyC, cR, cxC, cyC, gr)
-            grad.addColorStop(0, `rgba(65, 130, 244, ${0.06 - i * 0.012})`)
-            grad.addColorStop(1, "transparent")
-            ctx.beginPath()
-            ctx.arc(cxC, cyC, gr, 0, Math.PI * 2)
-            ctx.fillStyle = grad
-            ctx.fill()
-        }
-
-        // Center glass icon + FG logo
-        if (glassIconRef.current) {
-            const glassSize = cR * 2.4
-            ctx.drawImage(glassIconRef.current, cxC - glassSize / 2, cyC - glassSize / 2, glassSize, glassSize)
-        }
-        drawFineGrainedSVG(ctx, cxC, cyC, cR, fgIconRef.current)
+        // (central node rendered as HTML overlay — see JSX below)
 
         // Active pulse
         if (isPulseActive && outerNode) {
@@ -610,7 +571,7 @@ export default function hero_context_layer() {
             const px = startPt.x + (endPt.x - startPt.x) * eased
             const py = startPt.y + (endPt.y - startPt.y) * eased
 
-            const sourceColor = SOURCE_COLORS[currentMsg.source] || "#4182F4"
+            const sourceColor = "#4182F4"
 
             const trailLen   = 0.35
             const trailStart = Math.max(0, eased - trailLen)
@@ -671,6 +632,8 @@ export default function hero_context_layer() {
 
     const accent = SOURCE_ACCENT[currentMsg.source] || "#888"
 
+    const fgSize = Math.min(width, height) * 0.14
+
     return (
         <div
             style={{
@@ -682,50 +645,51 @@ export default function hero_context_layer() {
             }}
         >
             
+            {/* Central FineGrained node — exact same element as Step 6 */}
+            <div style={{
+                position: "absolute",
+                left: cxC_,
+                top: cyC_,
+                transform: "translate(-50%, -50%)",
+                opacity: nodeOpacity,
+                zIndex: 8,
+            }}>
+                {rippleProg > 0 && rippleProg < 1 && (
+                    <div
+                        style={{
+                            position: "absolute",
+                            inset: -rippleProg * 50,
+                            borderRadius: "50%",
+                            border: `2px solid rgba(65,130,244,${0.4 * (1 - rippleProg)})`,
+                            pointerEvents: "none",
+                        }}
+                    />
+                )}
+                <div style={{
+                    width: fgSize,
+                    height: fgSize,
+                    borderRadius: "50%",
+                    background: "radial-gradient(circle at 36% 34%, #5a9cf5, #2d6ad6)",
+                    boxShadow: "0 0 32px rgba(37,99,235,0.4)",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                }}>
+                    <div
+                        style={{ width: fgSize * 0.45, height: fgSize * 0.45 }}
+                        dangerouslySetInnerHTML={{
+                            __html: FINEGRAINED_SVG.replace(/<svg /, '<svg style="width:100%;height:100%" '),
+                        }}
+                    />
+                </div>
+            </div>
+
             {/* Canvas */}
             <canvas
                 ref={canvasRef}
                 style={{ position: "absolute", inset: 0, width: "100%", height: "100%" }}
             />
 
-            {/* Context card — opacity and position driven by frame, not CSS animation */}
-            {outerNode && cardOpacity > 0 && (
-                <div
-                    style={{
-                        position: "absolute",
-                        left: cardX,
-                        top: cardY,
-                        width: cardW,
-                        pointerEvents: "none",
-                        zIndex: 10,
-                        opacity: cardOpacity,
-                        transform: cardTransform,
-                    }}
-                >
-                    <div
-                        style={{
-                            background: "rgba(255,255,255,0.94)",
-                            border: `1px solid ${accent}18`,
-                            borderLeft: `3px solid ${accent}90`,
-                            borderRadius: 8,
-                            padding: "8px 12px",
-                            boxShadow: "0 2px 20px rgba(0,0,0,0.06), 0 0 0 1px rgba(0,0,0,0.02)",
-                        }}
-                    >
-                        <div style={{ display: "flex", alignItems: "center", gap: 5, marginBottom: 3 }}>
-                            <span style={{ fontSize: 10, fontWeight: 700, color: accent, letterSpacing: "0.04em", textTransform: "uppercase" }}>
-                                {SOURCE_LABEL[currentMsg.source] || currentMsg.source}
-                            </span>
-                            <span style={{ fontSize: 10, color: "#8899aa" }}>
-                                · {currentMsg.person}
-                            </span>
-                        </div>
-                        <div style={{ fontSize: 11, lineHeight: 1.45, color: "#3a4a5c", fontWeight: 400 }}>
-                            {currentMsg.text}
-                        </div>
-                    </div>
-                </div>
-            )}
         </div>
     )
 }

@@ -29,7 +29,7 @@ const fullVideoDuration =
     step1Duration + step2Duration + step3Duration +
     step4Duration + step5Duration + step6Duration -
     // subtract overlap from transitions
-    (transFrames("heroToStep1") + transFrames("step1ToStep2") +
+    (transFrames("step6ToHero") + transFrames("step1ToStep2") +
      transFrames("step2ToStep3") + transFrames("step3ToStep4") +
      transFrames("step4ToStep5") + transFrames("step5ToStep6"))
 

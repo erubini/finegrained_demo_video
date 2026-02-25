@@ -157,12 +157,13 @@ export default function Step6Illustration() {
         })
 
         return {
-            diffVis:   ease(clamp((progress - p("diff").start)  /  p("diff").weight)),
-            cardsProg: ease(clamp((progress - p("cards").start) /  p("cards").weight)),
-            shiftProg: ease(clamp((progress - p("shift").start) /  p("shift").weight)),
-            nodeProg:  ease(clamp((progress - p("node").start)  /  p("node").weight)),
-            flowProg:       clamp((progress - p("flow").start)  /  p("flow").weight),
-            pulseProg:      clamp((progress - p("pulse").start + p("flow").weight * 0.25) / p("pulse").weight),
+            diffVis:        ease(clamp((progress - p("diff").start)      /  p("diff").weight)),
+            cardsProg:      ease(clamp((progress - p("cards").start)     /  p("cards").weight)),
+            shiftProg:      ease(clamp((progress - p("shift").start)     /  p("shift").weight)),
+            nodeProg:       ease(clamp((progress - p("node").start)      /  p("node").weight)),
+            flowProg:            clamp((progress - p("flow").start)      /  p("flow").weight),
+            pulseProg:           clamp((progress - p("pulse").start + p("flow").weight * 0.25) / p("pulse").weight),
+            slideOutProg:   ease(clamp((progress - p("slideOut").start)  /  p("slideOut").weight)),
         }
     }, [progress])
 
@@ -185,8 +186,14 @@ export default function Step6Illustration() {
     const fgY    = dims.h * 0.5
     const fgSize = base * 0.14
 
+    // Slide-out + node-center animated positions
+    const slideOutOffset    = -anim.slideOutProg * (cardBaseX + cardW + pad * 2)
+    const diffXRendered     = diffXRest  + slideOutOffset
+    const cardBaseXRendered = cardBaseX  + slideOutOffset
+    const fgXRendered = Math.round(lerp(fgX, dims.w * 0.5, anim.slideOutProg))
+
     const cardPositions = CARDS.map((c) => ({
-        x: cardBaseX,
+        x: cardBaseXRendered,
         y: dims.h * c.y,
     }))
 
@@ -208,7 +215,7 @@ export default function Step6Illustration() {
                         const cp  = cardPositions[i]
                         const sx  = cp.x + cardW
                         const sy  = cp.y
-                        const tx  = fgX
+                        const tx  = fgXRendered
                         const ty  = fgY
                         const cpx = (sx + tx) / 2
 
@@ -222,7 +229,7 @@ export default function Step6Illustration() {
                         const showDot = t < 1
 
                         return (
-                            <g key={`flow-${card.id}`} opacity={anim.shiftProg}>
+                            <g key={`flow-${card.id}`} opacity={anim.shiftProg * (1 - anim.slideOutProg)}>
                                 <path
                                     d={`M ${sx} ${sy} Q ${cpx} ${(sy + ty) / 2}, ${tx} ${ty}`}
                                     stroke="rgba(100,116,139,0.2)"
@@ -253,7 +260,7 @@ export default function Step6Illustration() {
 
             {/* Code diff panel */}
             <WindowFrame
-                x={diffXRest} y={diffY} w={diffW} h={diffH}
+                x={diffXRendered} y={diffY} w={diffW} h={diffH}
                 base={base} pad={pad}
                 contentTranslateX={(1 - anim.diffVis) * (diffW + pad * 2)}
             >
@@ -356,7 +363,7 @@ export default function Step6Illustration() {
                 <div
                     style={{
                         position: "absolute",
-                        left: fgX,
+                        left: fgXRendered,
                         top: fgY,
                         transform: `translate(-50%, -50%) scale(${0.85 + anim.nodeProg * 0.15})`,
                         opacity: anim.nodeProg,

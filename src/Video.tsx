@@ -9,11 +9,9 @@ import Step2Illustration from "./Step2Illustration"
 import Step3Illustration from "./Step3Illustration"
 import Step4Illustration from "./Step4Illustration"
 import Step5Illustration from "./Step5Illustration"
-import Step7Illustration from "./Step6Illustration"
-import { PHASES, TRANSITIONS, AUDIO, VIDEO, s, phaseDuration } from "./config"
+import Step6Illustration from "./Step6Illustration"
+import { PHASES, TRANSITIONS, AUDIO, s, phaseDuration } from "./config"
 import { zoomCamera } from "./ZoomCameraTransition"
-
-const { fps } = VIDEO
 
 const transFrames = (key: keyof typeof TRANSITIONS) => s(TRANSITIONS[key].seconds)
 const transType   = (key: keyof typeof TRANSITIONS) =>
@@ -77,12 +75,12 @@ export const Video: React.FC = () => {
                     </TransitionSeries.Sequence>
 
                     <TransitionSeries.Sequence durationInFrames={phaseDuration(PHASES.step6)}>
-                        <Step7Illustration />
+                        <Step6Illustration />
                     </TransitionSeries.Sequence>
 
                     <TransitionSeries.Transition
-                        presentation={transType("heroToStep1")}
-                        timing={linearTiming({ durationInFrames: transFrames("heroToStep1") })}
+                        presentation={transType("step6ToHero")}
+                        timing={linearTiming({ durationInFrames: transFrames("step6ToHero") })}
                     />
 
                     <TransitionSeries.Sequence durationInFrames={s(PHASES.hero.duration)}>
