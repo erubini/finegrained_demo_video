@@ -78,9 +78,11 @@ export const PHASES = {
     step6: {
         diff:  1,
         cards: 1.1,
-        shift: 1.1,
+        shift: 0.8,
+        node:  0.8,
         flow:  1.5,
         pulse: 1.2,
+        pauseafterPulse: 10,
     },
 }
 

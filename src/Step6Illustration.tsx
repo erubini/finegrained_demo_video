@@ -160,8 +160,9 @@ export default function Step6Illustration() {
             diffVis:   ease(clamp((progress - p("diff").start)  /  p("diff").weight)),
             cardsProg: ease(clamp((progress - p("cards").start) /  p("cards").weight)),
             shiftProg: ease(clamp((progress - p("shift").start) /  p("shift").weight)),
+            nodeProg:  ease(clamp((progress - p("node").start)  /  p("node").weight)),
             flowProg:       clamp((progress - p("flow").start)  /  p("flow").weight),
-            pulseProg: ease(clamp((progress - p("pulse").start) /  p("pulse").weight)),
+            pulseProg:      clamp((progress - p("pulse").start + p("flow").weight * 0.25) / p("pulse").weight),
         }
     }, [progress])
 
@@ -169,7 +170,7 @@ export default function Step6Illustration() {
     const diffW      = base * 0.52
     const diffH      = base * 0.85
     const diffXFinal = dims.w * 0.52 - diffW / 2
-    const diffXRest  = lerp(diffXFinal, base * 0.03, anim.shiftProg)
+    const diffXRest  = lerp(diffXFinal, base * 0.13, anim.shiftProg)
     const diffY      = dims.h * 0.5 - diffH / 2
 
     // Card dimensions
@@ -177,7 +178,7 @@ export default function Step6Illustration() {
     const cardH = base * 0.12
 
     // Cards X position follows the right edge of the diff panel as it shifts
-    const cardBaseX = lerp(diffXFinal + diffW + base * 0.02, base * 0.03 + diffW + base * 0.02, anim.shiftProg)
+    const cardBaseX = lerp(diffXFinal + diffW + base * 0.02, base * 0.13 + diffW + base * 0.02, anim.shiftProg)
 
     // FineGrained node
     const fgX    = dims.w * 0.82
@@ -213,35 +214,38 @@ export default function Step6Illustration() {
 
                         const t = ease(clamp(anim.flowProg))
                         if (t <= 0) return null
-                        const fade = t < 0.3 ? t / 0.3 : t > 0.7 ? (1 - t) / 0.3 : 1
 
-                        const tStart = Math.max(0, t - 0.3)
-
-                        // Bezier point at t
-                        const bx  = (1 - t) * (1 - t) * sx + 2 * (1 - t) * t * cpx + t * t * tx
-                        const by  = (1 - t) * (1 - t) * sy + 2 * (1 - t) * t * ((sy + ty) / 2) + t * t * ty
-                        const btx = (1 - tStart) * (1 - tStart) * sx + 2 * (1 - tStart) * tStart * cpx + tStart * tStart * tx
-                        const bty = (1 - tStart) * (1 - tStart) * sy + 2 * (1 - tStart) * tStart * ((sy + ty) / 2) + tStart * tStart * ty
+                        // Dashed path fades in at the start, then stays visible
+                        const pathOpacity = t < 0.3 ? t / 0.3 : 1
+                        // Traveling dot fades in at start, fades out on arrival
+                        const dotFade = t < 0.3 ? t / 0.3 : t > 0.7 ? (1 - t) / 0.3 : 1
+                        const showDot = t < 1
 
                         return (
-                            <g key={`flow-${card.id}`} opacity={fade * anim.shiftProg}>
+                            <g key={`flow-${card.id}`} opacity={anim.shiftProg}>
                                 <path
                                     d={`M ${sx} ${sy} Q ${cpx} ${(sy + ty) / 2}, ${tx} ${ty}`}
                                     stroke="rgba(100,116,139,0.2)"
                                     strokeWidth="1.5"
                                     strokeDasharray="4 4"
                                     fill="none"
+                                    opacity={pathOpacity}
                                 />
-                                <line
-                                    x1={btx} y1={bty} x2={bx} y2={by}
-                                    stroke="#4182F4"
-                                    strokeWidth="2.5"
-                                    strokeLinecap="round"
-                                    opacity="0.6"
-                                />
-                                <circle cx={bx} cy={by} r={base * 0.02}  fill="#4182F4" opacity="0.15" />
-                                <circle cx={bx} cy={by} r={base * 0.008} fill="#4182F4" />
-                                <circle cx={bx} cy={by} r={base * 0.004} fill="#ffffff" />
+                                {showDot && (() => {
+                                    const tStart = Math.max(0, t - 0.3)
+                                    const bx  = (1 - t) * (1 - t) * sx + 2 * (1 - t) * t * cpx + t * t * tx
+                                    const by  = (1 - t) * (1 - t) * sy + 2 * (1 - t) * t * ((sy + ty) / 2) + t * t * ty
+                                    const btx = (1 - tStart) * (1 - tStart) * sx + 2 * (1 - tStart) * tStart * cpx + tStart * tStart * tx
+                                    const bty = (1 - tStart) * (1 - tStart) * sy + 2 * (1 - tStart) * tStart * ((sy + ty) / 2) + tStart * tStart * ty
+                                    return (
+                                        <g opacity={dotFade}>
+                                            <line x1={btx} y1={bty} x2={bx} y2={by} stroke="#4182F4" strokeWidth="2.5" strokeLinecap="round" opacity="0.6" />
+                                            <circle cx={bx} cy={by} r={base * 0.02}  fill="#4182F4" opacity="0.15" />
+                                            <circle cx={bx} cy={by} r={base * 0.008} fill="#4182F4" />
+                                            <circle cx={bx} cy={by} r={base * 0.004} fill="#ffffff" />
+                                        </g>
+                                    )
+                                })()}
                             </g>
                         )
                     })}
@@ -348,14 +352,14 @@ export default function Step6Illustration() {
             })}
 
             {/* FineGrained node */}
-            {anim.shiftProg > 0.3 && (
+            {anim.nodeProg > 0.01 && (
                 <div
                     style={{
                         position: "absolute",
                         left: fgX,
                         top: fgY,
-                        transform: `translate(-50%, -50%) scale(${ease(clamp((anim.shiftProg - 0.3) * 2))})`,
-                        opacity: ease(clamp((anim.shiftProg - 0.3) * 2)),
+                        transform: `translate(-50%, -50%) scale(${0.85 + anim.nodeProg * 0.15})`,
+                        opacity: anim.nodeProg,
                         zIndex: 8,
                     }}
                 >
@@ -365,9 +369,7 @@ export default function Step6Illustration() {
                             height: fgSize,
                             borderRadius: "50%",
                             background: "radial-gradient(circle at 36% 34%, #5a9cf5, #2d6ad6)",
-                            boxShadow: anim.pulseProg > 0
-                                ? `0 0 ${12 + anim.pulseProg * 50}px rgba(37,99,235,${0.15 + anim.pulseProg * 0.55})`
-                                : "0 2px 8px rgba(37,99,235,0.15)",
+                            boxShadow: `0 0 ${12 + anim.nodeProg * 20}px rgba(37,99,235,${0.15 + anim.nodeProg * 0.25})`,
                             display: "flex",
                             alignItems: "center",
                             justifyContent: "center",
@@ -381,37 +383,14 @@ export default function Step6Illustration() {
                         />
                     </div>
 
-                    {/* Pulse ring 1 */}
-                    {anim.pulseProg > 0.2 && (
+                    {/* Single ripple ring — fires as flows arrive */}
+                    {anim.pulseProg > 0 && (
                         <div
                             style={{
                                 position: "absolute",
-                                left: "50%",
-                                top: "50%",
-                                transform: "translate(-50%, -50%)",
-                                width:  fgSize * lerp(1, 2.2, ease(clamp((anim.pulseProg - 0.2) * 1.5))),
-                                height: fgSize * lerp(1, 2.2, ease(clamp((anim.pulseProg - 0.2) * 1.5))),
+                                inset: -anim.pulseProg * 50,
                                 borderRadius: "50%",
-                                border: "1.5px solid rgba(37,99,235,0.2)",
-                                opacity: 1 - ease(clamp((anim.pulseProg - 0.5) * 2)),
-                                pointerEvents: "none",
-                            }}
-                        />
-                    )}
-
-                    {/* Pulse ring 2 */}
-                    {anim.pulseProg > 0.5 && (
-                        <div
-                            style={{
-                                position: "absolute",
-                                left: "50%",
-                                top: "50%",
-                                transform: "translate(-50%, -50%)",
-                                width:  fgSize * lerp(1, 1.8, ease(clamp((anim.pulseProg - 0.5) * 2))),
-                                height: fgSize * lerp(1, 1.8, ease(clamp((anim.pulseProg - 0.5) * 2))),
-                                borderRadius: "50%",
-                                border: "1.5px solid rgba(37,99,235,0.15)",
-                                opacity: 1 - ease(clamp((anim.pulseProg - 0.75) * 4)),
+                                border: `2px solid rgba(65,130,244,${0.4 * (1 - anim.pulseProg)})`,
                                 pointerEvents: "none",
                             }}
                         />
