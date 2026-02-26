@@ -10,6 +10,7 @@ import Step3Illustration from "./Step3Illustration"
 import Step4Illustration from "./Step4Illustration"
 import Step5Illustration from "./Step5Illustration"
 import Step6Illustration from "./Step6Illustration"
+import StepOutroIllustration from "./StepOutroIllustration"
 import { PHASES, TRANSITIONS, AUDIO, s, phaseDuration } from "./config"
 import { zoomCamera } from "./ZoomCameraTransition"
 
@@ -19,8 +20,11 @@ const transType   = (key: keyof typeof TRANSITIONS) =>
 
 export const Video: React.FC = () => {
     const frame = useCurrentFrame()
-    const stepsduration = phaseDuration(PHASES.step1) + phaseDuration(PHASES.step2) + phaseDuration(PHASES.step3) + phaseDuration(PHASES.step4) + phaseDuration(PHASES.step5) + phaseDuration(PHASES.step6)
-    const isHero = frame >= stepsduration
+    const stepsduration  = phaseDuration(PHASES.step1) + phaseDuration(PHASES.step2) + phaseDuration(PHASES.step3) + phaseDuration(PHASES.step4) + phaseDuration(PHASES.step5) + phaseDuration(PHASES.step6)
+    const heroDuration   = s(PHASES.hero.duration)
+    // isHero is true only during the hero sequence — the outro manages its own background
+    const isHero = frame >= stepsduration && frame < stepsduration + heroDuration
+
     return (
         <>
             {/* Hero background */}
@@ -83,8 +87,13 @@ export const Video: React.FC = () => {
                         timing={linearTiming({ durationInFrames: transFrames("step6ToHero") })}
                     />
 
-                    <TransitionSeries.Sequence durationInFrames={s(PHASES.hero.duration)}>
+                    <TransitionSeries.Sequence durationInFrames={heroDuration}>
                         <HeroContextLayer />
+                    </TransitionSeries.Sequence>
+
+                    {/* Hard cut from hero to outro — no transition */}
+                    <TransitionSeries.Sequence durationInFrames={phaseDuration(PHASES.outro)}>
+                        <StepOutroIllustration />
                     </TransitionSeries.Sequence>
                 </TransitionSeries>
 

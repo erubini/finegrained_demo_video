@@ -184,7 +184,9 @@ export default function Step6Illustration() {
     // FineGrained node
     const fgX    = dims.w * 0.82
     const fgY    = dims.h * 0.5
-    const fgSize = base * 0.14
+    const fgSize    = base * 0.14
+    const MAX_ZOOM  = 3.0
+    const maxFgSize = fgSize * MAX_ZOOM
 
     // Slide-out + node-center animated positions
     const slideOutOffset    = -anim.slideOutProg * (cardBaseX + cardW + pad * 2)
@@ -365,25 +367,26 @@ export default function Step6Illustration() {
                         position: "absolute",
                         left: fgXRendered,
                         top: fgY,
-                        transform: `translate(-50%, -50%) scale(${0.85 + anim.nodeProg * 0.15})`,
+                        transform: `translate(-50%, -50%) scale(${(0.85 + anim.nodeProg * 0.15) / MAX_ZOOM})`,
+                        transformOrigin: "center center",
                         opacity: anim.nodeProg,
                         zIndex: 8,
                     }}
                 >
                     <div
                         style={{
-                            width: fgSize,
-                            height: fgSize,
+                            width: maxFgSize,
+                            height: maxFgSize,
                             borderRadius: "50%",
                             background: "radial-gradient(circle at 36% 34%, #5a9cf5, #2d6ad6)",
-                            boxShadow: `0 0 ${12 + anim.nodeProg * 20}px rgba(37,99,235,${0.15 + anim.nodeProg * 0.25})`,
+                            boxShadow: `0 0 ${(12 + anim.nodeProg * 20) * MAX_ZOOM}px rgba(37,99,235,${0.15 + anim.nodeProg * 0.25})`,
                             display: "flex",
                             alignItems: "center",
                             justifyContent: "center",
                         }}
                     >
                         <div
-                            style={{ width: fgSize * 0.45, height: fgSize * 0.45 }}
+                            style={{ width: maxFgSize * 0.45, height: maxFgSize * 0.45 }}
                             dangerouslySetInnerHTML={{
                                 __html: FINEGRAINED_SVG.replace(/<svg /, '<svg style="width:100%;height:100%" '),
                             }}
@@ -395,7 +398,7 @@ export default function Step6Illustration() {
                         <div
                             style={{
                                 position: "absolute",
-                                inset: -anim.pulseProg * 50,
+                                inset: -anim.pulseProg * 50 * MAX_ZOOM,
                                 borderRadius: "50%",
                                 border: `2px solid rgba(65,130,244,${0.4 * (1 - anim.pulseProg)})`,
                                 pointerEvents: "none",

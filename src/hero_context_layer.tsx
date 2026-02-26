@@ -512,8 +512,7 @@ export default function hero_context_layer() {
         positionedNodes.forEach((node) => {
             const { x: nx, y: ny } = nodePixels.get(node.id)!
             const style = NODE_STYLES[node.type as keyof typeof NODE_STYLES]
-            const breathe = 1 + Math.sin(t * 0.0015 + node.x * 10 + node.y * 7) * 0.04
-            const r = OUTER_RADIUS * breathe
+            const r = OUTER_RADIUS
 
             ctx.beginPath()
             ctx.arc(nx, ny, r, 0, Math.PI * 2)
@@ -632,7 +631,9 @@ export default function hero_context_layer() {
 
     const accent = SOURCE_ACCENT[currentMsg.source] || "#888"
 
-    const fgSize = Math.min(width, height) * 0.14
+    const fgSize    = Math.min(width, height) * 0.14
+    const MAX_ZOOM  = 3.0
+    const maxFgSize = fgSize * MAX_ZOOM
 
     return (
         <div
@@ -650,7 +651,8 @@ export default function hero_context_layer() {
                 position: "absolute",
                 left: cxC_,
                 top: cyC_,
-                transform: "translate(-50%, -50%)",
+                transform: `translate(-50%, -50%) scale(${1 / MAX_ZOOM})`,
+                transformOrigin: "center center",
                 opacity: nodeOpacity,
                 zIndex: 8,
             }}>
@@ -658,7 +660,7 @@ export default function hero_context_layer() {
                     <div
                         style={{
                             position: "absolute",
-                            inset: -rippleProg * 50,
+                            inset: -rippleProg * 50 * MAX_ZOOM,
                             borderRadius: "50%",
                             border: `2px solid rgba(65,130,244,${0.4 * (1 - rippleProg)})`,
                             pointerEvents: "none",
@@ -666,17 +668,17 @@ export default function hero_context_layer() {
                     />
                 )}
                 <div style={{
-                    width: fgSize,
-                    height: fgSize,
+                    width: maxFgSize,
+                    height: maxFgSize,
                     borderRadius: "50%",
                     background: "radial-gradient(circle at 36% 34%, #5a9cf5, #2d6ad6)",
-                    boxShadow: "0 0 32px rgba(37,99,235,0.4)",
+                    boxShadow: `0 0 ${32 * MAX_ZOOM}px rgba(37,99,235,0.4)`,
                     display: "flex",
                     alignItems: "center",
                     justifyContent: "center",
                 }}>
                     <div
-                        style={{ width: fgSize * 0.45, height: fgSize * 0.45 }}
+                        style={{ width: maxFgSize * 0.45, height: maxFgSize * 0.45 }}
                         dangerouslySetInnerHTML={{
                             __html: FINEGRAINED_SVG.replace(/<svg /, '<svg style="width:100%;height:100%" '),
                         }}

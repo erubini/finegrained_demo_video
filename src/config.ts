@@ -8,7 +8,7 @@ export const VIDEO = {
 // ─── Phase timing (all values in seconds) ────────────────────────────────────
 export const PHASES = {
     hero: {
-        duration:        60,   // total seconds
+        duration:        6,   // total seconds
         cycleSeconds:     3,   // seconds per message cycle
         pulseSeconds:   2.27,  // seconds for pulse travel (cycleSeconds * 68/90)
         impactSeconds:  0.73,  // seconds for impact effect (cycleSeconds * 22/90)
@@ -86,6 +86,13 @@ export const PHASES = {
         slideOut:      1.2,
         pauseAtCenter: 2,
     },
+    outro: {
+        pausebeforeZoom: 1,
+        zoom:    1.5,  // camera zoom in + fade out graph + recolor logo
+        hold:    1.0,  // blue logo holds alone on white
+        slide:   1.2,  // icon slides right, wordmark reveals to the left
+        holdEnd: 3.0,  // final hold on full logo
+    },
 }
 
 // ─── Transitions ──────────────────────────────────────────────────────────────
@@ -96,6 +103,7 @@ export const TRANSITIONS = {
     step4ToStep5: { type: "zoom", seconds: 5 },
     step5ToStep6: { type: "fade",  seconds: 0.5 },
     step6ToHero:  { type: "fade",  seconds: 0.7 },
+    // heroToOutro: hard cut — no transition entry needed
 }
 
 // ─── Audio ────────────────────────────────────────────────────────────────────
